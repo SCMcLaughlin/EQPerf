@@ -2,6 +2,8 @@
 #include "eqp_atomic.h"
 #include "eqp_semaphore.h"
 #include "ringbuf.h"
+#include "tls.h"
+#include "enum_id.h"
 
 int main()
 {
@@ -44,5 +46,20 @@ int main()
         }
         
         ringbuf_destroy(rb);
+    }
+    
+    if (tls_global_init_keys())
+        printf("tls_init_keys failed\n");
+    else if (tls_init_thread(EQPID_MainThread))
+        printf("tls_init_thread failed\n");
+    else
+    {
+        int id;
+        printf("tls_init succeeded\n");
+        
+        if (tls_get_int(TlsKey_Id, &id))
+            printf("tls_get_int failed\n");
+        else
+            printf("tls id: %i\n", id);
     }
 }

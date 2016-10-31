@@ -28,6 +28,8 @@
 # include <unistd.h>
 #endif
 
+#include "enum_err.h"
+
 #ifdef EQP_WINDOWS
 # define EQP_API __declspec(dllexport)
 #else
