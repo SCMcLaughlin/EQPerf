@@ -5,6 +5,7 @@
 #include "define.h"
 #include "eqp_alloc.h"
 #include "eqp_tls.h"
+#include "eqp_clock.h"
 #include "structs_thread.h"
 
 int thread_start(int srcId, ThreadProc func, Thread* thread, void* userdata);
