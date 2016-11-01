@@ -3,35 +3,17 @@
 
 int semaphore_init(Semaphore* ptr)
 {
-    if (sem_init(&ptr->semaphore, 0, 0))
-    {
-        //log error
-        return ERR_CouldNotInit;
-    }
-    
-    return ERR_None;
+    return sem_init(&ptr->semaphore, 0, 0) ? ERR_CouldNotInit : ERR_None;
 }
 
 int semaphore_deinit(Semaphore* ptr)
 {
-    if (sem_destroy(&ptr->semaphore))
-    {
-        //log error
-        return ERR_Generic;
-    }
-    
-    return ERR_None;
+    return sem_destroy(&ptr->semaphore) ? ERR_Generic : ERR_None;
 }
 
 int semaphore_wait(Semaphore* ptr)
 {
-    if (sem_wait(&ptr->semaphore))
-    {
-        //log error
-        return ERR_Generic;
-    }
-    
-    return ERR_None;
+    return sem_wait(&ptr->semaphore) ? ERR_Generic : ERR_None;
 }
 
 int semaphore_try_wait(Semaphore* ptr)
@@ -47,10 +29,5 @@ int semaphore_try_wait(Semaphore* ptr)
 
 int semaphore_trigger(Semaphore* ptr)
 {
-    if (sem_post(&ptr->semaphore))
-    {
-        return ERR_Generic;
-    }
-    
-    return ERR_None;
+    return sem_post(&ptr->semaphore) ? ERR_Generic : ERR_None;
 }
