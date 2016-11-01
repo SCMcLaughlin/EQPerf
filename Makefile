@@ -24,6 +24,7 @@ _EQP_SERVER_OBJECTS=    \
  eqp_clock_posix        \
  eqp_semaphore_posix    \
  eqp_server_main        \
+ eqp_string             \
  eqp_thread_common      \
  eqp_thread_posix       \
  eqp_tls_posix          \
