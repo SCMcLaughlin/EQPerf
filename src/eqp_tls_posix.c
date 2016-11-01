@@ -1,5 +1,5 @@
 
-#include "tls.h"
+#include "eqp_tls.h"
 #include <pthread.h>
 
 static pthread_key_t sKeyId;

@@ -2,7 +2,7 @@
 #include "eqp_atomic.h"
 #include "eqp_semaphore.h"
 #include "ringbuf.h"
-#include "tls.h"
+#include "eqp_tls.h"
 
 int main()
 {

@@ -3,7 +3,7 @@
 #define LOG_H
 
 #include "define.h"
-#include "tls.h"
+#include "eqp_tls.h"
 
 enum LogType
 {

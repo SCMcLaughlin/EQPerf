@@ -23,8 +23,8 @@ _EQP_SERVER_OBJECTS=    \
  eqp_atomic_posix       \
  eqp_semaphore_posix    \
  eqp_server_main        \
- ringbuf                \
- tls_posix
+ eqp_tls_posix          \
+ ringbuf
 
 EQP_SERVER_OBJECTS= $(patsubst %,build/%.o,$(_EQP_SERVER_OBJECTS))
 

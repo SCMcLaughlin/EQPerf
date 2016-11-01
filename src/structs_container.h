@@ -11,6 +11,11 @@ typedef struct Array {
     byte*       data;
 } Array;
 
+typedef struct SimpleString {
+    uint32_t    length;
+    char        data[0];
+} SimpleString;
+
 typedef struct String {
     uint32_t    length;
     uint32_t    capacity;
@@ -19,9 +24,9 @@ typedef struct String {
 
 typedef struct HashTblEnt {
     union {
-        String      keyStr; /* The hash table makes private copies of all keys */
-        int64_t     keyInt;
-        uint64_t    padding[2];
+        SimpleString*   keyStr; /* The hash table makes private copies of all keys */
+        int64_t         keyInt;
+        uint64_t        padding;
     };
     uint32_t    hash;
     uint32_t    next;

@@ -1,5 +1,5 @@
 
-#include "tls.h"
+#include "eqp_tls.h"
 
 static DWORD sKeyId;
 
