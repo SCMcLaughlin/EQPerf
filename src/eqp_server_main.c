@@ -3,6 +3,18 @@
 #include "eqp_semaphore.h"
 #include "ringbuf.h"
 #include "eqp_tls.h"
+#include "eqp_thread.h"
+
+static void threadmain(Thread* thread, void* userdata)
+{
+    (void)thread;
+    (void)userdata;
+    int id = -1;
+    
+    tls_get_int(TlsKey_Id, &id);
+    
+    printf("thread says hi, tls id: %i\n", id);
+}
 
 int main()
 {
@@ -60,5 +72,18 @@ int main()
             printf("tls_get_int failed\n");
         else
             printf("tls id: %i\n", id);
+    }
+    
+    Thread* thread = alloc_type(Thread);
+    
+    if (!thread)
+        printf("thread alloc failed\n");
+    else if (thread_start(2, threadmain, thread, NULL))
+        printf("thread_start failed\n");
+    else
+    {
+        thread_wait_until_stopped(thread);
+        printf("thread finished\n");
+        free(thread);
     }
 }

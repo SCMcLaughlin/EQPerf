@@ -6,7 +6,8 @@
 #include "eqp_atomic.h"
 #include "eqp_semaphore.h"
 
-typedef void(*ThreadProc)(void* ud);
+struct Thread;
+typedef void(*ThreadProc)(struct Thread* thread, void* ud);
 
 typedef struct Thread {
     amutex      mtxLifetime;

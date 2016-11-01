@@ -7,5 +7,6 @@
 #define ERR_CouldNotInit    -2
 #define ERR_CouldNotOpen    -3
 #define ERR_Invalid         -4
+#define ERR_OutOfMemory     -5
 
 #endif/*ENUM_ERR_H*/
