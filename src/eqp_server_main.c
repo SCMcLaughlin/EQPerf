@@ -3,7 +3,6 @@
 #include "eqp_semaphore.h"
 #include "ringbuf.h"
 #include "tls.h"
-#include "enum_id.h"
 
 int main()
 {
