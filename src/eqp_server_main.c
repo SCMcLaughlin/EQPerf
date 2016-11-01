@@ -4,6 +4,7 @@
 #include "ringbuf.h"
 #include "eqp_tls.h"
 #include "eqp_thread.h"
+#include "eqp_clock.h"
 
 static void threadmain(Thread* thread, void* userdata)
 {
@@ -18,7 +19,10 @@ static void threadmain(Thread* thread, void* userdata)
 
 int main()
 {
+    PerfTimer pt;
     aint32_t a;
+    
+    perf_init(&pt);
     
     aint32_set(&a, 5);
     
@@ -86,4 +90,6 @@ int main()
         printf("thread finished\n");
         free(thread);
     }
+
+    printf("total time: %lu\n", perf_microseconds(&pt));
 }
