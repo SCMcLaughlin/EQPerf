@@ -16,6 +16,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <math.h>
+#include <limits.h>
 
 #ifdef EQP_WINDOWS
 # include <windows.h>
