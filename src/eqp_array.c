@@ -16,7 +16,10 @@ void array_deinit(Array* ar)
     if (ar->data)
     {
         free(ar->data);
-        ar->data = NULL;
+        
+        ar->count       = 0;
+        ar->capacity    = 0;
+        ar->data        = NULL;
     }
 }
 

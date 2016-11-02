@@ -19,11 +19,12 @@ typedef struct String {
     char*       data;
 } String;
 
+typedef void(*HashTblCallback)(void* elem);
+
 typedef struct HashTblEnt {
     union {
         SimpleString*   keyStr; /* The hash table makes private copies of all keys */
         int64_t         keyInt;
-        uint64_t        padding;
     };
     uint32_t    hash;
     uint32_t    next;

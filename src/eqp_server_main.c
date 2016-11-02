@@ -5,6 +5,7 @@
 #include "eqp_tls.h"
 #include "eqp_thread.h"
 #include "eqp_clock.h"
+#include "container.h"
 
 static void threadmain(Thread* thread, void* userdata)
 {
@@ -90,6 +91,20 @@ int main()
         printf("thread finished\n");
         free(thread);
     }
+    
+    HashTbl tbl;
+    
+    tbl_init(&tbl, int);
+    
+    int x = 99;
+    tbl_set_int(&tbl, 7, &x);
+    x = 66;
+    tbl_set_cstr(&tbl, "hi there", 0, &x);
+    
+    x = *tbl_get_cstr(&tbl, "hi there", 0, int);
+    printf("hash tbl: %i, ", x);
+    x = *tbl_get_int(&tbl, 7, int);
+    printf("%i\n", x);
 
     printf("total time: %lu\n", perf_microseconds(&pt));
 }
