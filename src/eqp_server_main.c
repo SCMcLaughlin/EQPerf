@@ -105,6 +105,8 @@ int main()
     printf("hash tbl: %i, ", x);
     x = *tbl_get_int(&tbl, 7, int);
     printf("%i\n", x);
+    
+    tbl_deinit(&tbl, NULL);
 
     printf("total time: %lu\n", perf_microseconds(&pt));
 }

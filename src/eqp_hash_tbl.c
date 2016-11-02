@@ -327,6 +327,8 @@ int tbl_set_cstr(HashTbl* tbl, const char* key, uint32_t len, const void* value)
 {
     uint32_t hash;
     
+    if (!key) return ERR_Invalid;
+    
     if (len == 0)
         len = strlen(key);
 
@@ -385,6 +387,8 @@ static void* tbl_get_impl(HashTbl* tbl, int64_t key, uint32_t len, int isIntKey,
 void* tbl_get_cstr_raw(HashTbl* tbl, const char* key, uint32_t len)
 {
     uint32_t hash;
+    
+    if (!key) return NULL;
     
     if (len == 0)
         len = strlen(key);
@@ -488,6 +492,8 @@ static int tbl_remove_impl(HashTbl* tbl, int64_t key, uint32_t len, int isIntKey
 int tbl_remove_cstr(HashTbl* tbl, const char* key, uint32_t len)
 {
     uint32_t hash;
+    
+    if (!key) return ERR_Invalid;
     
     if (len == 0)
         len = strlen(key);
