@@ -80,11 +80,16 @@ void* array_push_back(Array* ar, const void* value)
     uint32_t size   = ar->elemSize;
     void* ptr;
     
-    if (cap == 0 && !array_alloc_default(ar))
-        return NULL;
-    
-    if (index >= cap && !array_realloc(ar))
-        return NULL;
+    if (cap == 0)
+    {
+        if (!array_alloc_default(ar))
+            return NULL;
+    }
+    else if (index >= cap)
+    {
+        if (!array_realloc(ar))
+            return NULL;
+    }
     
     ar->count   = index + 1;
     ptr         = &ar->data[index * size];
