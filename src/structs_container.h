@@ -11,10 +11,7 @@ typedef struct Array {
     byte*       data;
 } Array;
 
-typedef struct SimpleString {
-    uint32_t    length;
-    char        data[0];
-} SimpleString;
+typedef struct SimpleString SimpleString;
 
 typedef struct String {
     uint32_t    length;

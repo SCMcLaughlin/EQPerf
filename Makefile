@@ -20,6 +20,7 @@ CDEF+= -DEQP_DEBUG -DDEBUG
 ##############################################################################
 _EQP_SERVER_OBJECTS=    \
  db                     \
+ eqp_array              \
  eqp_atomic_posix       \
  eqp_clock_posix        \
  eqp_semaphore_posix    \
