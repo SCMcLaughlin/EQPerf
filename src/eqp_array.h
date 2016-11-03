@@ -8,7 +8,7 @@
 
 void array_init_size(Array* ar, uint32_t elemSize);
 #define array_init(ar, type) array_init_size((ar), sizeof(type))
-void array_deinit(Array* ar);
+void array_deinit(Array* ar, ArrayCallback dtor);
 
 #define array_count(ar) ((ar)->count)
 #define array_capacity(ar) ((ar)->capacity)

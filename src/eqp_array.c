@@ -11,10 +11,18 @@ void array_init_size(Array* ar, uint32_t elemSize)
     ar->data        = NULL;
 }
 
-void array_deinit(Array* ar)
+void array_deinit(Array* ar, ArrayCallback dtor)
 {
     if (ar->data)
     {
+        uint32_t index = 0;
+        void* elem;
+        
+        while ((elem = array_get_raw(ar, index++)))
+        {
+            dtor(elem);
+        }
+        
         free(ar->data);
         
         ar->count       = 0;

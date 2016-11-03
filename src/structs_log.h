@@ -16,6 +16,7 @@ typedef struct LogThread {
     Thread      thread;
     RingBuf*    ringBuf;
     HashTbl     logFiles;
+    Array       activeCompressThreads;
 } LogThread;
 
 #endif/*STRUCTS_LOG_H*/

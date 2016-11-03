@@ -3,8 +3,12 @@
 
 static LogThread* sLog;
 
+#define NAME_LEN 256
+
 static void log_thread_proc(Thread*, void*);
 static void log_close_all_files(void* ptr);
+static void log_close_all_compress_threads(void* ptr);
+static int log_name_by_src(int srcId, char* name, const char* dir);
 
 int log_init(void)
 {
@@ -23,6 +27,7 @@ int log_init(void)
         return ERR_OutOfMemory;
     
     tbl_init(&sLog->logFiles, LogFile);
+    array_init(&sLog->activeCompressThreads, Thread*);
     
     rc = thread_start(EQPID_LogThread, log_thread_proc, &sLog->thread, NULL);
     
@@ -38,6 +43,7 @@ void log_deinit(void)
         thread_wait_until_stopped(&sLog->thread);
     
     tbl_deinit(&sLog->logFiles, log_close_all_files);
+    array_deinit(&sLog->activeCompressThreads, log_close_all_compress_threads);
     
     if (sLog->ringBuf)
     {
@@ -226,6 +232,109 @@ void log_close_all_files(void* ptr)
     }
 }
 
+void log_close_all_compress_threads(void* ptr)
+{
+    Thread** pp = (Thread**)ptr;
+    
+    if (pp)
+    {
+        Thread* thread = *pp;
+        
+        if (thread)
+        {
+            thread_wait_until_stopped(thread);
+            free(thread);
+        }
+    }
+}
+
+static void log_compress_proc(Thread* thread, void* ptr)
+{
+    char cmd[1024];
+    char* name = (char*)ptr;
+    
+    (void)thread;
+    
+    if (snprintf(cmd, sizeof(cmd), "gzip %s", name) > 0)
+    {
+        system(cmd);
+    }
+    
+    free(name);
+}
+
+static void log_compress(LogFile* lf, int srcId)
+{
+    char cmd[1024];
+    char oldName[NAME_LEN];
+    char* newName;
+    Thread* thread;
+    int len;
+    time_t rawTime;
+    struct tm* curTime;
+    
+    if (log_name_by_src(srcId, oldName, "log") <= 0)
+        return;
+    
+    newName = alloc_array_type(NAME_LEN, char);
+    
+    if (!newName)
+        return;
+    
+    len = log_name_by_src(srcId, newName, "log/archive");
+    
+    if (len <= 0)
+    {
+    abort:
+        free(newName);
+        return;
+    }
+    
+    rawTime = time(NULL);
+    
+    if (rawTime == -1)
+        goto abort;
+    
+    curTime = localtime(&rawTime);
+    
+    if (!curTime)
+        goto abort;
+    
+    len = strftime(newName + len, NAME_LEN - len, "-%Y-%m-%d-%H:%M:%S", curTime);
+    
+    if (len <= 0)
+        goto abort;
+    
+    len = snprintf(cmd, sizeof(cmd), "mv %s %s", oldName, newName);
+    
+    if (len <= 0)
+        goto abort;
+    
+    system(cmd);
+    
+    thread = alloc_type(Thread);
+    
+    if (!thread)
+        goto abort;
+    
+    if (!array_push_back(&sLog->activeCompressThreads, (void*)&thread))
+    {
+        free(thread);
+        goto abort;
+    }
+    
+    thread_start(0, log_compress_proc, thread, newName);
+    
+    if (lf->fp)
+    {
+        fclose(lf->fp);
+        lf->fp = NULL;
+    }
+    
+    lf->fp      = fopen(oldName, "a");
+    lf->size    = 0;
+}
+
 static void log_write_msg(RingPacket* rp, HashTbl* logFiles)
 {
     LogFile* lf     = tbl_get_int(logFiles, rp->srcId, LogFile);
@@ -246,30 +355,32 @@ static void log_write_msg(RingPacket* rp, HashTbl* logFiles)
     fflush(fp);
     
     lf->size += len + 1;
-    /*fixme: check size limit*/
+
+#ifdef EQP_LINUX
+    if (lf->size >= EQP_LOG_COMPRESS_THRESHOLD)
+        log_compress(lf, rp->srcId);
+#endif
     
 free_str:
     free(str);
 }
 
-#define NAME_LEN 256
-
-static int log_name_by_src(int srcId, char* name)
+int log_name_by_src(int srcId, char* name, const char* dir)
 {
     int len;
     
     switch (srcId)
     {
     case EQPID_MainThread:
-        len = snprintf(name, NAME_LEN, "log/main.log");
+        len = snprintf(name, NAME_LEN, "%s/main.log", dir);
         break;
     
     default:
-        len = snprintf(name, NAME_LEN, "log/unknown.log");
+        len = snprintf(name, NAME_LEN, "%s/unknown.log", dir);
         break;
     }
     
-    return (len <= 0);
+    return len;
 }
 
 static void log_register_impl(RingPacket* rp, HashTbl* logFiles)
@@ -278,7 +389,7 @@ static void log_register_impl(RingPacket* rp, HashTbl* logFiles)
     char name[NAME_LEN];
     LogFile lf;
     
-    if (log_name_by_src(srcId, name))
+    if (log_name_by_src(srcId, name, "log") <= 0)
         return;
     
     /* Do we already have a log open for this srcId? */
@@ -294,16 +405,22 @@ static void log_register_impl(RingPacket* rp, HashTbl* logFiles)
         fseek(lf.fp, 0, SEEK_END);
         lf.size = ftell(lf.fp);
         fclose(lf.fp);
+        lf.fp = NULL;
     }
     
+#ifdef EQP_LINUX
+    if (lf.size >= EQP_LOG_COMPRESS_THRESHOLD)
+        log_compress(&lf, rp->srcId);
+    else
+        lf.fp = fopen(name, "a");
+#else
     /* Open the file for appending */
     lf.fp = fopen(name, "a");
+#endif
     
     if (lf.fp)
         tbl_set_int(logFiles, srcId, &lf);
 }
-
-#undef NAME_LEN
 
 static void log_deregister_impl(RingPacket* rp, HashTbl* logFiles)
 {
@@ -319,6 +436,33 @@ static void log_deregister_impl(RingPacket* rp, HashTbl* logFiles)
     }
     
     tbl_remove_int(logFiles, srcId);
+}
+
+static void log_check_threads(void)
+{
+    Array* array    = &sLog->activeCompressThreads;
+    uint32_t index  = 0;
+    
+    for (;;)
+    {
+        Thread** pThread = array_get(array, index, Thread*);
+        Thread* thread;
+        
+        if (!pThread)
+            break;
+        
+        thread = *pThread;
+            
+        if (thread && !thread_is_running(thread))
+        {
+            free(thread);
+            *pThread = NULL;
+            array_swap_and_pop(array, index);
+            continue;
+        }
+        
+        index++;
+    }
 }
 
 void log_thread_proc(Thread* thread, void* unused)
@@ -356,9 +500,13 @@ void log_thread_proc(Thread* thread, void* unused)
             }
         }
         
+        log_check_threads();
+        
         if (thread_should_stop(thread))
             break;
     }
     
     /* Thread was told to stop, or we had an error waiting on the semaphore */
 }
+
+#undef NAME_LEN

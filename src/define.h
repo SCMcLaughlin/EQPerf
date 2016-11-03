@@ -6,6 +6,7 @@
 # define EQP_WINDOWS
 #else
 # define EQP_UNIX
+# define EQP_LINUX
 #endif
 
 #include <stdlib.h>

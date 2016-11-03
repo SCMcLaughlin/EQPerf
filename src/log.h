@@ -8,6 +8,8 @@
 #include "eqp_alloc.h"
 #include "structs_log.h"
 
+#define EQP_LOG_COMPRESS_THRESHOLD 1024
+
 int log_init(void);
 void log_deinit(void);
 

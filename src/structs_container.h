@@ -4,6 +4,8 @@
 
 #include "define.h"
 
+typedef void(*ArrayCallback)(void* elem);
+
 typedef struct Array {
     uint32_t    count;
     uint32_t    capacity;
