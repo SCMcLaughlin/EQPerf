@@ -312,19 +312,34 @@ static void log_compress(LogFile* lf, int srcId)
     
     system(cmd);
     
+    /*
+        Beyond this point, we assume the log was successfully moved,
+        and the open currently file (if any) can no longer be written to.
+    
+        If the thread or compression fails, that's okay -- we at least
+        have the full log moved to log/archive/ and have the timestamp
+        appended to its name. We can create a new file and move on
+        without issue.
+    */
+    
     thread = alloc_type(Thread);
     
     if (!thread)
-        goto abort;
+    {
+    abort_thread:
+        free(newName);
+        goto close_open;
+    }
     
     if (!array_push_back(&sLog->activeCompressThreads, (void*)&thread))
     {
         free(thread);
-        goto abort;
+        goto abort_thread;
     }
     
-    thread_start(0, log_compress_proc, thread, newName);
-    
+    thread_start(EQPID_None, log_compress_proc, thread, newName);
+
+close_open:
     if (lf->fp)
     {
         fclose(lf->fp);
