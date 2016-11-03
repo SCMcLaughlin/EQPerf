@@ -8,6 +8,7 @@ enum LogType
     Log_Warning,
     Log_Error,
     Log_Fatal,
+    Log_Init,
     Log_SQL,
     Log_Lua
 };

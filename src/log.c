@@ -49,28 +49,92 @@ void log_deinit(void)
     sLog = NULL;
 }
 
+#define MSG_OVERHEAD 64
+
+static int log_msg_overhead(int type, char* str)
+{
+    time_t rawTime;
+    struct tm* curTime;
+    int len;
+    int tagLen;
+    
+    rawTime = time(NULL);
+    
+    if (rawTime == -1) goto fail;
+    
+    curTime = localtime(&rawTime);
+    
+    if (!curTime) goto fail;
+    
+    len = strftime(str, MSG_OVERHEAD, "[%Y-%m-%d : %H:%M:%S] ", curTime);
+    
+    if (len <= 0) goto fail;
+    
+    switch (type)
+    {
+    case Log_Info:
+        tagLen = snprintf(str + len, MSG_OVERHEAD - len, "|Info| ");
+        break;
+    
+    case Log_Warning:
+        tagLen = snprintf(str + len, MSG_OVERHEAD - len, "|Warning| ");
+        break;
+    
+    case Log_Error:
+        tagLen = snprintf(str + len, MSG_OVERHEAD - len, "|ERROR| ");
+        break;
+    
+    case Log_Fatal:
+        tagLen = snprintf(str + len, MSG_OVERHEAD - len, "|FATAL| ");
+        break;
+    
+    case Log_Init:
+        tagLen = snprintf(str + len, MSG_OVERHEAD - len, "|Init| ");
+        break;
+    
+    case Log_SQL:
+        tagLen = snprintf(str + len, MSG_OVERHEAD - len, "|SQL| ");
+        break;
+    
+    case Log_Lua:
+        tagLen = snprintf(str + len, MSG_OVERHEAD - len, "|Lua| ");
+        break;
+    
+    default:
+        tagLen = -1;
+        break;
+    }
+    
+    return (tagLen > 0) ? len + tagLen : len;
+    
+fail:
+    return 0;
+}
+
 static void log_impl(int srcId, int type, const char* fmt, va_list args, va_list check)
 {
     RingPacket rp;
     int len;
     int checkLen;
+    int overheadLen;
     char* str;
+    
+    if (!sLog || !sLog->ringBuf)
+        return;
     
     len = vsnprintf(NULL, 0, fmt, check);
     
     if (len <= 0)
         return;
     
-    len++;
-    str = alloc_array_type(len + sizeof(int), char);
+    len += MSG_OVERHEAD + 1;
+    str = alloc_array_type(len, char);
     
     if (!str)
         return;
     
-    /* First four bytes encode the 'type' of the log message */
-    memcpy(str, &type, sizeof(int));
-    
-    checkLen = vsnprintf(str + sizeof(int), len, fmt, args);
+    overheadLen = log_msg_overhead(type, str);
+    checkLen    = vsnprintf(str + overheadLen, len - overheadLen, fmt, args);
     
     if (checkLen <= 0 || checkLen >= len)
     {
@@ -79,7 +143,7 @@ static void log_impl(int srcId, int type, const char* fmt, va_list args, va_list
         return;
     }
     
-    ring_packet_init_src(&rp, srcId, EQPID_LogThread, RingOp_LogMessage, checkLen, str);
+    ring_packet_init_src(&rp, srcId, EQPID_LogThread, RingOp_LogMessage, checkLen + overheadLen, str);
     
     if (ringbuf_push(sLog->ringBuf, &rp))
     {
@@ -89,6 +153,8 @@ static void log_impl(int srcId, int type, const char* fmt, va_list args, va_list
     
     thread_trigger(&sLog->thread);
 }
+
+#undef MSG_OVERHEAD
 
 void log_msg(int type, const char* fmt, ...)
 {
@@ -127,7 +193,8 @@ static int log_reg_impl(int srcId, int opcode)
     RingPacket rp;
     int rc;
     
-    if (!sLog || !sLog->ringBuf) return ERR_NotInitialized;
+    if (!sLog || !sLog->ringBuf)
+        return ERR_NotInitialized;
     
     ring_packet_init_src(&rp, srcId, EQPID_LogThread, opcode, 0, NULL);
     rc = ringbuf_push(sLog->ringBuf, &rp);
@@ -166,12 +233,15 @@ static void log_write_msg(RingPacket* rp, HashTbl* logFiles)
     uint32_t len    = rp->length;
     FILE* fp;
     
-    if (!lf || !lf->fp || !str || !len)
+    if (!str)
+        return;
+    
+    if (!lf || !lf->fp || !len)
         goto free_str;
     
     fp = lf->fp;
     
-    fwrite(str + sizeof(int), sizeof(char), len, fp);
+    fwrite(str, sizeof(char), len, fp);
     fputc('\n', fp);
     fflush(fp);
     
@@ -179,8 +249,7 @@ static void log_write_msg(RingPacket* rp, HashTbl* logFiles)
     /*fixme: check size limit*/
     
 free_str:
-    if (str)
-        free(str);
+    free(str);
 }
 
 #define NAME_LEN 256
@@ -263,7 +332,7 @@ void log_thread_proc(Thread* thread, void* unused)
     {
         RingPacket rp;
         
-        if (thread_wait(thread) || thread_should_stop(thread))
+        if (thread_wait(thread))
             break;
         
         while (!ringbuf_pop(ringBuf, &rp))
@@ -286,6 +355,9 @@ void log_thread_proc(Thread* thread, void* unused)
                 break;
             }
         }
+        
+        if (thread_should_stop(thread))
+            break;
     }
     
     /* Thread was told to stop, or we had an error waiting on the semaphore */

@@ -12,12 +12,14 @@ int mt_global_init(void)
     
 #define check(err) if (rc) do { mt_global_init_err((err), rc); goto fail; } while(0)
     
+    /* Init the thread local storage system, and set the id for the main thread */
     rc = tls_global_init_keys();
     check("tls_global_init_keys() failed");
     
     rc = tls_init_thread(EQPID_MainThread);
     check("tls_init_thread() failed");
     
+    /* Start the logging thread, and open a log for the main thread */
     rc = log_init();
     check("log_init() failed");
     
@@ -25,6 +27,8 @@ int mt_global_init(void)
     check("log_register() failed");
     
 #undef check
+    
+    log_msg(Log_Init, "[%s] Essential systems initialized", FUNC);
     
     return ERR_None;
     
@@ -34,6 +38,7 @@ fail:
 
 void mt_global_deinit(void)
 {
+    log_msg(Log_Init, "[%s] Shutting down essential systems", FUNC);
     log_deinit();
     tls_global_deinit_keys();
 }
