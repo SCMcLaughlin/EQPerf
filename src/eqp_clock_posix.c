@@ -20,7 +20,7 @@ uint64_t clock_unix_seconds()
     return time(NULL);
 }
 
-void clock_sleep_milliseconds(uint32_t ms)
+void clock_sleep(uint32_t ms)
 {
     struct timespec t;
     t.tv_sec    = ms / 1000;

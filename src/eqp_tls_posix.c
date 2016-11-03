@@ -17,6 +17,11 @@ int tls_global_init_keys(void)
         ? ERR_CouldNotInit : ERR_None;
 }
 
+void tls_global_deinit_keys(void)
+{
+    pthread_key_delete(sKeyId);
+}
+
 int tls_init_thread(int srcId)
 {
     return

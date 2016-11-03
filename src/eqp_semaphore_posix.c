@@ -21,10 +21,10 @@ int semaphore_try_wait(Semaphore* ptr)
     if (sem_trywait(&ptr->semaphore))
     {
         int err = errno;
-        return (err == EAGAIN) ? 1 : ERR_Generic;
+        return (err == EAGAIN) ? ERR_False : ERR_Generic;
     }
     
-    return ERR_None;
+    return ERR_True;
 }
 
 int semaphore_trigger(Semaphore* ptr)

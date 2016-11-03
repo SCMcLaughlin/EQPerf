@@ -3,22 +3,15 @@
 #define LOG_H
 
 #include "define.h"
+#include "enum_log.h"
 #include "eqp_tls.h"
-
-enum LogType
-{
-    Log_Info,
-    Log_Warning,
-    Log_Error,
-    Log_Fatal,
-    Log_SQL,
-    Log_Lua
-};
+#include "eqp_alloc.h"
+#include "structs_log.h"
 
 int log_init(void);
-int log_deinit(void);
+void log_deinit(void);
 
-void log(int type, const char* fmt, ...);
+void log_msg(int type, const char* fmt, ...);
 void log_as_id(int srcId, int type, const char* fmt, ...);
 
 int log_register(int srcId);

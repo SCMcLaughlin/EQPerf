@@ -7,27 +7,11 @@ RingBuf* ringbuf_create(void)
     
     if (!rb) return NULL;
     
-    if (!ringbuf_init(rb))
-        return rb;
-    
-    /* Semaphore init failed, can't rely on the ring buffer to work right */
-    free(rb);
-    return NULL;
+    ringbuf_init(rb);
+    return rb;
 }
 
-int ringbuf_destroy(RingBuf* rb)
-{
-    int rc;
-    
-    if (!rb) return 0;
-    
-    rc = ringbuf_deinit(rb);
-    free(rb);
-    
-    return rc;
-}
-
-int ringbuf_init(RingBuf* rb)
+void ringbuf_init(RingBuf* rb)
 {
     uint32_t i;
     uint32_t n          = EQP_RINGBUF_MAX_PACKETS - 1;
@@ -52,28 +36,6 @@ int ringbuf_init(RingBuf* rb)
     aint16_set(&rb->readEnd, 0);
     aint16_set(&rb->writeStart, 0);
     aint16_set(&rb->writeEnd, 0);
-    
-    return semaphore_init(&rb->semaphore);
-}
-
-int ringbuf_deinit(RingBuf* rb)
-{
-    return semaphore_deinit(&rb->semaphore);
-}
-
-int ringbuf_wait(RingBuf* rb)
-{
-    return semaphore_wait(&rb->semaphore);
-}
-
-int ringbuf_try_wait(RingBuf* rb)
-{
-    return semaphore_try_wait(&rb->semaphore);
-}
-
-int ringbuf_trigger(RingBuf* rb)
-{
-    return semaphore_trigger(&rb->semaphore);
 }
 
 static void ringbuf_push_impl(RingBuf* rb, RingBlock* block, const RingPacket* p)
@@ -97,8 +59,6 @@ static void ringbuf_push_impl(RingBuf* rb, RingBlock* block, const RingPacket* p
         /* Advance writeStart and loop */
         aint16_cmp_xchg_strong(&rb->writeStart, index, block->nextIndex);
     }
-    
-    semaphore_trigger(&rb->semaphore); //fixme: log failure of this call
 }
 
 int ringbuf_push(RingBuf* rb, const RingPacket* p)
@@ -109,12 +69,12 @@ int ringbuf_push(RingBuf* rb, const RingPacket* p)
         RingBlock* block    = &rb->blocks[index];
         
         if (block->nextIndex == aint16_get(&rb->readStart))
-            return -1;
+            return ERR_OutOfSpace;
         
         if (aint16_cmp_xchg_weak(&rb->writeEnd, index, block->nextIndex))
         {
             ringbuf_push_impl(rb, block, p);
-            return 0;
+            return ERR_None;
         }
     }
 }
@@ -150,12 +110,22 @@ int ringbuf_pop(RingBuf* rb, RingPacket* p)
         RingBlock* block    = &rb->blocks[index];
         
         if (index == aint16_get(&rb->writeStart))
-            return -1;
+            return ERR_Again;
         
         if (aint16_cmp_xchg_weak(&rb->readEnd, index, block->nextIndex))
         {
             ringbuf_pop_impl(rb, block, p);
-            return 0;
+            return ERR_None;
         }
     }
+}
+
+
+void ring_packet_init_src(RingPacket* p, int srcId, int dstId, int opcode, uint32_t len, void* data)
+{
+    p->srcId    = srcId;
+    p->dstId    = dstId;
+    p->opcode   = opcode;
+    p->length   = len;
+    p->data     = data;
 }

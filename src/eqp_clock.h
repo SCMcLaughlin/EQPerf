@@ -8,7 +8,7 @@
 EQP_API uint64_t clock_milliseconds();
 EQP_API uint64_t clock_microseconds();
 EQP_API uint64_t clock_unix_seconds();
-void clock_sleep_milliseconds(uint32_t ms);
+void clock_sleep(uint32_t ms);
 
 typedef uint64_t PerfTimer;
 

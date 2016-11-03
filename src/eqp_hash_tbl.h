@@ -21,6 +21,7 @@ void* tbl_get_cstr_raw(HashTbl* tbl, const char* key, uint32_t len);
 void* tbl_get_int_raw(HashTbl* tbl, int64_t key);
 #define tbl_get_int(tbl, key, type) (type*)tbl_get_int_raw((tbl), (key))
 #define tbl_get_ptr(tbl, ptr, type) tbl_get_int(tbl, (intptr_t)(ptr), type)
+#define tbl_has_int(tbl, key) (tbl_get_int_raw((tbl), (key)) != NULL)
 
 int tbl_remove_cstr(HashTbl* tbl, const char* key, uint32_t len);
 int tbl_remove_int(HashTbl* ptr, int64_t key);

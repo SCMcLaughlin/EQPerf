@@ -31,6 +31,8 @@ _EQP_SERVER_OBJECTS=    \
  eqp_thread_posix       \
  eqp_tls_posix          \
  hash                   \
+ log                    \
+ main_thread            \
  ringbuf
 
 EQP_SERVER_OBJECTS= $(patsubst %,build/%.o,$(_EQP_SERVER_OBJECTS))

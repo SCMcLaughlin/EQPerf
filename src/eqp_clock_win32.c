@@ -35,7 +35,7 @@ uint64_t clock_unix_seconds()
     return _time64(NULL);
 }
 
-void clock_sleep_milliseconds(uint32_t ms)
+void clock_sleep(uint32_t ms)
 {
     Sleep(ms);
 }

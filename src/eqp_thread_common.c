@@ -16,7 +16,7 @@ void thread_wait_until_stopped(Thread* thread)
         if (amutex_try_lock(mtx))
             break;
         
-        clock_sleep_milliseconds(10);
+        clock_sleep(10);
     }
     
     amutex_unlock(mtx);

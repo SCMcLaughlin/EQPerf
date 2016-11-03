@@ -40,7 +40,6 @@ typedef struct RingBuf {
     aint16_t    readEnd;
     aint16_t    writeStart;
     aint16_t    writeEnd;
-    Semaphore   semaphore;
 } RingBuf;
 
 #endif/*STRUCTS_RINGBUF_H*/

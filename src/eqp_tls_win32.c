@@ -17,6 +17,11 @@ int tls_init_thread(int srcId)
         ? ERR_None : ERR_CouldNotInit;
 }
 
+void tls_global_deinit_keys(void)
+{
+    TlsFree(sKeyId);
+}
+
 void* tls_get_ptr(int key)
 {
     DWORD tkey;

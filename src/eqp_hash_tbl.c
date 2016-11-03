@@ -348,8 +348,14 @@ static void* tbl_get_impl(HashTbl* tbl, int64_t key, uint32_t len, int isIntKey,
     uint32_t capMinusOne    = tbl->capacity - 1;
     uint32_t size           = tbl->entSize;
     uint32_t pos            = hash & capMinusOne;
-    HashTblEnt* ent         = (HashTblEnt*)&tbl->data[pos * size];
+    byte* data              = tbl->data;
+    HashTblEnt* ent;
     uint32_t mainPos;
+    
+    if (!data)
+        return NULL;
+    
+    ent = (HashTblEnt*)&data[pos * size];
     
     if (ent_is_empty(ent))
         return NULL;
@@ -410,9 +416,15 @@ static int tbl_remove_impl(HashTbl* tbl, int64_t key, uint32_t len, int isIntKey
     uint32_t entSize        = tbl->entSize;
     uint32_t freeIndex      = tbl->freeIndex;
     uint32_t pos            = hash & capMinusOne;
-    HashTblEnt* ent         = (HashTblEnt*)&tbl->data[entSize * pos];
+    byte* data              = tbl->data;
     HashTblEnt* prev        = NULL;
+    HashTblEnt* ent;
     uint32_t mainPos;
+    
+    if (!data)
+        return false;
+    
+    ent = (HashTblEnt*)&data[entSize * pos];
     
     if (ent_is_empty(ent))
         return false;
