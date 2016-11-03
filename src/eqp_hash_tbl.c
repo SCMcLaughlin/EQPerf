@@ -91,6 +91,8 @@ static int tbl_alloc_default(HashTbl* tbl)
     
     if (!data) return false;
     
+    memset(data, 0, entSize * MIN_CAPACITY);
+    
     tbl->capacity   = MIN_CAPACITY;
     tbl->data       = data;
     
