@@ -3,13 +3,14 @@
 #define DB_H
 
 #include "define.h"
+#include "log.h"
 #include "eqp_alloc.h"
 #include "structs_db.h"
 
 EQP_API Database* db_create(void);
 EQP_API void db_destroy(Database* db);
 
-void db_init(Database* db);
+int db_init(Database* db);
 void db_deinit(Database* db);
 
 EQP_API int db_open(Database* db, const char* dbPath, const char* schemaPath);

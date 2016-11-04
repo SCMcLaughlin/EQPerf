@@ -20,6 +20,7 @@ CDEF+= -DEQP_DEBUG -DDEBUG
 ##############################################################################
 _EQP_SERVER_OBJECTS=    \
  db                     \
+ db_stmt		\
  db_thread              \
  eqp_array              \
  eqp_atomic_posix       \

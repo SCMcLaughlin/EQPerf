@@ -9,6 +9,8 @@
 #include "ringbuf.h"
 #include <sqlite3.h>
 
+#define STMT_CALC_LEN (-1)
+
 typedef sqlite3_stmt PreparedStmt;
 
 typedef struct DbThread {

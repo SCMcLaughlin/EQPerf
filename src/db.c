@@ -1,13 +1,24 @@
 
 #include "db.h"
+#include "db_thread.h"
+
+extern DbThread* gDbThread;
 
 Database* db_create(void)
 {
     Database* db = alloc_type(Database);
+    int rc;
     
     if (!db) return NULL;
     
-    db_init(db);
+    rc = db_init(db);
+    
+    if (rc)
+    {
+        free(db);
+        return NULL;
+    }
+    
     return db;
 }
 
@@ -19,17 +30,25 @@ void db_destroy(Database* db)
     free(db);
 }
 
-void db_init(Database* db)
+int db_init(Database* db)
 {
-    db->sqlite      = NULL;
-    //db->dbThread    = NULL;//core_db_thread(core);
-    db->dbPath      = NULL;
+    db->sqlite          = NULL;
+    db->callbackQueue   = ringbuf_create();
+    db->dbPath          = NULL;
     aint32_set(&db->nextQueryId, 1);
+    
+    return (!db->callbackQueue) ? ERR_OutOfMemory : ERR_None;
 }
 
 void db_deinit(Database* db)
 {
     sqlite3_close_v2(db->sqlite);
+    
+    if (db->callbackQueue)
+    {
+        ringbuf_destroy(db->callbackQueue);
+        db->callbackQueue = NULL;
+    }
     
     if (db->dbPath)
     {
@@ -54,19 +73,19 @@ static int db_open_create(Database* db, const char* dbPath, const char* schemaPa
     
     if (rc != SQLITE_OK)
     {
-        //fixme: log err message
-        return -1;
+        log_msg(Log_Error, "[%s] Could not create database '%s', SQLite error (%i): %s", FUNC, dbPath, rc, sqlite3_errstr(rc));
+        return ERR_CouldNotCreate;
     }
     
     if (!schemaPath)
-        return 0;
+        return ERR_None;
     
     schema = fopen(schemaPath, "rb");
     
     if (!schema)
     {
-        //fixme: log err message
-        return -1;
+        log_msg(Log_Error, "[%s] Could not read schema file '%s', SQLite error (%i): %s", FUNC, schemaPath, rc, sqlite3_errstr(rc));
+        return ERR_CouldNotOpen;
     }
 
     //fixme: replace with String funcs later

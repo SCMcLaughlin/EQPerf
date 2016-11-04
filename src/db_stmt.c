@@ -1,0 +1,87 @@
+
+#include "db_stmt.h"
+
+int stmt_int(PreparedStmt* stmt, int column, int value)
+{
+    int rc = sqlite3_bind_int(stmt, column, value);
+    
+    if (rc != SQLITE_OK)
+    {
+        log_msg(Log_Error, "[%s] SQLite error (%i): %s", FUNC, rc, sqlite3_errstr(rc));
+        return ERR_Invalid;
+    }
+    
+    return ERR_None;
+}
+
+int stmt_int64(PreparedStmt* stmt, int column, int64_t value)
+{
+    int rc = sqlite3_bind_int64(stmt, column, value);
+    
+    if (rc != SQLITE_OK)
+    {
+        log_msg(Log_Error, "[%s] SQLite error (%i): %s", FUNC, rc, sqlite3_errstr(rc));
+        return ERR_Invalid;
+    }
+    
+    return ERR_None;
+}
+
+int stmt_double(PreparedStmt* stmt, int column, double value)
+{
+    int rc = sqlite3_bind_double(stmt, column, value);
+    
+    if (rc != SQLITE_OK)
+    {
+        log_msg(Log_Error, "[%s] SQLite error (%i): %s", FUNC, rc, sqlite3_errstr(rc));
+        return ERR_Invalid;
+    }
+    
+    return ERR_None;
+}
+
+static int stmt_cstr_impl(PreparedStmt* stmt, int column, const char* value, int len, void (*type)(void*))
+{
+    int rc = sqlite3_bind_text(stmt, column, value, len, type);
+    
+    if (rc != SQLITE_OK)
+    {
+        log_msg(Log_Error, "[%s] SQLite error (%i): %s", FUNC, rc, sqlite3_errstr(rc));
+        return ERR_Invalid;
+    }
+    
+    return ERR_None;
+}
+
+int stmt_cstr(PreparedStmt* stmt, int column, const char* value, int len)
+{
+    return stmt_cstr_impl(stmt, column, value, len, SQLITE_TRANSIENT);
+}
+
+int stmt_cstr_no_copy(PreparedStmt* stmt, int column, const char* value, int len)
+{
+    return stmt_cstr_impl(stmt, column, value, len, SQLITE_STATIC);
+}
+
+static int stmt_blob_impl(PreparedStmt* stmt, int column, const void* value, uint32_t len, void (*type)(void*))
+{
+    int rc = sqlite3_bind_blob(stmt, column, value, len, type);
+    
+    if (rc != SQLITE_OK)
+    {
+        log_msg(Log_Error, "[%s] SQLite error (%i): %s", FUNC, rc, sqlite3_errstr(rc));
+        return ERR_Invalid;
+    }
+    
+    return ERR_None;
+}
+
+int stmt_blob(PreparedStmt* stmt, int column, const void* value, uint32_t len)
+{
+    return stmt_blob_impl(stmt, column, value, len, SQLITE_TRANSIENT);
+}
+
+int stmt_blob_no_copy(PreparedStmt* stmt, int column, const void* value, uint32_t len)
+{
+    return stmt_blob_impl(stmt, column, value, len, SQLITE_STATIC);
+}

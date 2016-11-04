@@ -13,5 +13,6 @@
 #define ERR_OutOfSpace      -6
 #define ERR_Again           -7
 #define ERR_NotInitialized  -8
+#define ERR_CouldNotCreate  -9
 
 #endif/*ENUM_ERR_H*/
