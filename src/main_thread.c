@@ -26,6 +26,9 @@ int mt_global_init(void)
     rc = log_register(EQPID_MainThread);
     check("log_register() failed");
     
+    rc = db_thread_init();
+    check("db_thread_init() failed");
+    
 #undef check
     
     log_msg(Log_Init, "[%s] Essential systems initialized", FUNC);
@@ -39,6 +42,7 @@ fail:
 void mt_global_deinit(void)
 {
     log_msg(Log_Init, "[%s] Shutting down essential systems", FUNC);
+    db_thread_deinit();
     log_deinit();
     tls_global_deinit_keys();
 }

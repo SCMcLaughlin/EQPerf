@@ -22,6 +22,12 @@ void thread_wait_until_stopped(Thread* thread)
     amutex_unlock(mtx);
 }
 
+void thread_stop_all_in_one(Thread* thread)
+{
+    if (thread_is_running(thread) && !thread_send_stop_signal(thread))
+        thread_wait_until_stopped(thread);
+}
+
 int thread_wait(Thread* thread)
 {
     return semaphore_wait(&thread->semaphore);

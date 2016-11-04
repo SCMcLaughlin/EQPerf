@@ -9,6 +9,9 @@ enum RingBufOp
     RingOp_LogMessage,
     RingOp_LogRegister,
     RingOp_LogDeregister,
+    /* Database */
+    RingOp_DbQuery,
+    RingOp_DbTransaction,
     /* End */
     RingOp_COUNT
 };

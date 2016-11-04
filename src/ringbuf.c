@@ -121,6 +121,20 @@ int ringbuf_pop(RingBuf* rb, RingPacket* p)
 }
 
 
+int ring_packet_init(RingPacket* p, int dstId, int opcode, uint32_t len, void* data)
+{
+    int srcId;
+    int rc;
+    
+    rc = tls_get_int(TlsKey_Id, &srcId);
+    
+    if (rc) return rc;
+    
+    ring_packet_init_src(p, srcId, dstId, opcode, len, data);
+    
+    return ERR_None;
+}
+
 void ring_packet_init_src(RingPacket* p, int srcId, int dstId, int opcode, uint32_t len, void* data)
 {
     p->srcId    = srcId;

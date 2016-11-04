@@ -4,54 +4,59 @@
 
 #include "define.h"
 #include "eqp_atomic.h"
-#include "structs_container.h"
+#include "eqp_thread.h"
+#include "container.h"
+#include "ringbuf.h"
 #include <sqlite3.h>
 
-typedef sqlite3_stmt Query;
+typedef sqlite3_stmt PreparedStmt;
 
 typedef struct DbThread {
-    
+    Thread      thread;
+    RingBuf*    inputQueue;
+    Array       activeQueries;
+    Array       activeTransactions;
 } DbThread;
 
 typedef struct Database {
-    sqlite3*    sqlite;
-    DbThread*   dbThread;
-    String*     dbPath;
-    aint32_t    nextQueryId;
+    sqlite3*        sqlite;
+    RingBuf*        callbackQueue;
+    SimpleString*   dbPath;
+    aint32_t        nextQueryId;
 } Database;
 
-struct QueryWrapper;
-typedef void(*QueryCB)(struct QueryWrapper* qw);
+struct Query;
+typedef void(*QueryCB)(struct Query* query);
 
-typedef struct QueryWrapper {
-    Query*      query;
-    Database*   db;
+typedef struct Query {
+    PreparedStmt*   stmt;
+    Database*       db;
     
     union {
-        int     state;
-        int64_t lastInsertId;
+        int         state;
+        int64_t     lastInsertId;
     };
     
     union {
-        void*   userdata;
-        int64_t userInt;
+        void*       userdata;
+        int64_t     userInt;
     };
     
-    QueryCB     callback;
-    uint32_t    queryId;
-    int         affectedRows;
-    uint64_t    timestamp;
-} QueryWrapper;
+    QueryCB         callback;
+    uint32_t        queryId;
+    int             affectedRows;
+    uint64_t        timestamp;
+} Query;
 
-struct TransactWrapper;
-typedef void(*TransactCB)(struct TransactWrapper* tw);
+struct Transaction;
+typedef void(*TransactCB)(struct Transaction* transact);
 
-typedef struct TransactWrapper {
+typedef struct Transaction {
     Database*   db;
     void*       userdata;
-    TransactCB  callback;
+    TransactCB  transactCallback;
     int         luaCallback;
     QueryCB     queryCallback;
-} TransactWrapper;
+} Transaction;
 
 #endif/*STRUCTS_DB_H*/

@@ -12,8 +12,6 @@ static int log_name_by_src(int srcId, char* name, const char* dir);
 
 int log_init(void)
 {
-    int rc;
-    
     sLog = alloc_type(LogThread);
     
     if (!sLog)
@@ -29,9 +27,7 @@ int log_init(void)
     tbl_init(&sLog->logFiles, LogFile);
     array_init(&sLog->activeCompressThreads, Thread*);
     
-    rc = thread_start(EQPID_LogThread, log_thread_proc, &sLog->thread, NULL);
-    
-    return (rc != ERR_None) ? rc : ERR_None;
+    return thread_start(EQPID_LogThread, log_thread_proc, &sLog->thread, NULL);
 }
 
 void log_deinit(void)
@@ -39,8 +35,7 @@ void log_deinit(void)
     if (!sLog) return;
     
     /* Gracefully stop the thead */
-    if (thread_is_running(&sLog->thread) && !thread_send_stop_signal(&sLog->thread))
-        thread_wait_until_stopped(&sLog->thread);
+    thread_stop_all_in_one(&sLog->thread);
     
     tbl_deinit(&sLog->logFiles, log_close_all_files);
     array_deinit(&sLog->activeCompressThreads, log_close_all_compress_threads);
@@ -388,6 +383,10 @@ int log_name_by_src(int srcId, char* name, const char* dir)
     {
     case EQPID_MainThread:
         len = snprintf(name, NAME_LEN, "%s/main.log", dir);
+        break;
+    
+    case EQPID_DbThread:
+        len = snprintf(name, NAME_LEN, "%s/db_thread.log", dir);
         break;
     
     default:

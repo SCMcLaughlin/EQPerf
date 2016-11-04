@@ -22,7 +22,7 @@ void db_destroy(Database* db)
 void db_init(Database* db)
 {
     db->sqlite      = NULL;
-    db->dbThread    = NULL;//core_db_thread(core);
+    //db->dbThread    = NULL;//core_db_thread(core);
     db->dbPath      = NULL;
     aint32_set(&db->nextQueryId, 1);
 }
@@ -126,9 +126,9 @@ int db_exec(Database* db, const char* sql)
     return (rc == SQLITE_OK) ? 0 : -1;
 }
 
-Query* db_prep(Database* db, const char* sql, int len)
+PreparedStmt* db_prep(Database* db, const char* sql, int len)
 {
-    Query* stmt = NULL;
+    PreparedStmt* stmt = NULL;
     int rc;
     
     rc = sqlite3_prepare_v2(db->sqlite, sql, len, &stmt, NULL);
@@ -141,7 +141,7 @@ Query* db_prep(Database* db, const char* sql, int len)
     return stmt;
 }
 
-int db_sched_ud(Database* db, Query* query, QueryCB callback, void* userdata)
+int db_sched_ud(Database* db, PreparedStmt* stmt, QueryCB callback, void* userdata)
 {
     return 0;
 }

@@ -11,6 +11,7 @@
 int thread_start(int srcId, ThreadProc func, Thread* thread, void* userdata);
 int thread_send_stop_signal(Thread* thread);
 void thread_wait_until_stopped(Thread* thread);
+void thread_stop_all_in_one(Thread* thread);
 
 int thread_wait(Thread* thread);
 int thread_try_wait(Thread* thread);
