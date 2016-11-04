@@ -346,7 +346,7 @@ close_open:
         lf->fp = NULL;
     }
     
-    lf->fp      = fopen(oldName, "a");
+    lf->fp      = fopen(oldName, "w+");
     lf->size    = 0;
 }
 
