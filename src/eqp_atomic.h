@@ -20,6 +20,8 @@ typedef atomic_flag amutex;
 
 void aint32_set(aint32_t* a, int32_t val);
 int32_t aint32_get(aint32_t* a);
+int32_t aint32_add(aint32_t* a, int32_t amt);
+int32_t aint32_sub(aint32_t* a, int32_t amt);
 int aint32_cmp_xchg_weak(aint32_t* a, int32_t expected, int32_t desired);
 int aint32_cmp_xchg_strong(aint32_t* a, int32_t expected, int32_t desired);
 

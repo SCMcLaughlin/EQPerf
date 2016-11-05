@@ -1,48 +1,49 @@
 
 #include "db_thread.h"
+#include "db_query.h"
 
-static DbThread* gDbThread;
+static DbThread* sDbThread;
 
 static void db_thread_proc(Thread* thread, void* ptr);
 
 int db_thread_init(void)
 {
-    gDbThread = alloc_type(DbThread);
+    sDbThread = alloc_type(DbThread);
     
-    if (!gDbThread)
+    if (!sDbThread)
         return ERR_OutOfMemory;
     
-    memset(gDbThread, 0, sizeof(DbThread));
+    memset(sDbThread, 0, sizeof(DbThread));
     
-    gDbThread->inputQueue = ringbuf_create();
+    sDbThread->inputQueue = ringbuf_create();
     
-    if (!gDbThread->inputQueue)
+    if (!sDbThread->inputQueue)
         return ERR_OutOfMemory;
     
-    array_init(&gDbThread->activeQueries, Query*);
-    array_init(&gDbThread->activeTransactions, Transaction*);
+    array_init(&sDbThread->activeQueries, Query*);
+    array_init(&sDbThread->activeTransactions, Transaction*);
     
-    return thread_start(EQPID_DbThread, db_thread_proc, &gDbThread->thread, NULL);
+    return thread_start(EQPID_DbThread, db_thread_proc, &sDbThread->thread, NULL);
 }
 
 void db_thread_deinit(void)
 {
-    if (!gDbThread) return;
+    if (!sDbThread) return;
     
     /* Gracefully stop the thead */
-    thread_stop_all_in_one(&gDbThread->thread);
+    thread_stop_all_in_one(&sDbThread->thread);
     
-    array_deinit(&gDbThread->activeQueries, NULL);
-    array_deinit(&gDbThread->activeTransactions, NULL);
+    array_deinit(&sDbThread->activeQueries, NULL);
+    array_deinit(&sDbThread->activeTransactions, NULL);
     
-    if (gDbThread->inputQueue)
+    if (sDbThread->inputQueue)
     {
-        ringbuf_destroy(gDbThread->inputQueue);
-        gDbThread->inputQueue = NULL;
+        ringbuf_destroy(sDbThread->inputQueue);
+        sDbThread->inputQueue = NULL;
     }
     
-    free(gDbThread);
-    gDbThread = NULL;
+    free(sDbThread);
+    sDbThread = NULL;
 }
 
 int db_thread_sched(void* ptr, int isTransaction)
@@ -58,11 +59,11 @@ int db_thread_sched(void* ptr, int isTransaction)
         return rc;
     }
     
-    rc = ringbuf_push(gDbThread->inputQueue, &rp);
+    rc = ringbuf_push(sDbThread->inputQueue, &rp);
     
     if (rc) goto err;
     
-    return thread_trigger(&gDbThread->thread);
+    return thread_trigger(&sDbThread->thread);
 }
 
 static void db_thread_push(Array* array, void* data, int isTransaction)
@@ -79,16 +80,15 @@ static void db_thread_push(Array* array, void* data, int isTransaction)
     
     /*if (isTransaction)
         transaction_destroy((Transaction*)data);
-    else
+    else*/
         query_destroy((Query*)data);
-    */
 }
 
 void db_thread_proc(Thread* thread, void* unused)
 {
-    RingBuf* inputQueue = gDbThread->inputQueue;
-    Array* queries      = &gDbThread->activeQueries;
-    Array* transactions = &gDbThread->activeTransactions;
+    RingBuf* inputQueue = sDbThread->inputQueue;
+    Array* queries      = &sDbThread->activeQueries;
+    Array* transactions = &sDbThread->activeTransactions;
     
     (void)unused;
     

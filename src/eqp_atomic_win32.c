@@ -11,6 +11,40 @@ int32_t aint32_get(aint32_t* a)
     return InterlockedCompareExchange(a, 0, 0);
 }
 
+int32_t aint32_add(aint32_t* a, int32_t amt)
+{
+    /*
+        InterlockedAdd() returns the value *after* the add, while the stdatomic function
+        atomic_fetch_add() returns the value *before* the add; we prefer the standard behavior,
+        so we simulate it for Win32 here...
+    
+        (fixme: could we just use inline asm to get the desired behavior?)
+    */
+    for (;;)
+    {
+        int32_t val = aint32_get(a);
+        int32_t set = val + amt;
+        
+        if (aint32_cmp_xchg_strong(a, val, set))
+            return val;
+    }
+}
+
+int32_t aint32_sub(aint32_t* a, int32_t amt)
+{
+    /*
+        See note in aint32_add() above
+    */
+    for (;;)
+    {
+        int32_t val = aint32_get(a);
+        int32_t set = val - amt;
+        
+        if (aint32_cmp_xchg_strong(a, val, set))
+            return val;
+    }
+}
+
 int aint32_cmp_xchg_weak(aint32_t* a, int32_t expected, int32_t desired)
 {
     return aint32_cmp_xchg_strong(a, expected, desired);

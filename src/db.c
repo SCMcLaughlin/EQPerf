@@ -1,8 +1,7 @@
 
 #include "db.h"
 #include "db_thread.h"
-
-extern DbThread* gDbThread;
+#include "db_query.h"
 
 Database* db_create(void)
 {
@@ -22,9 +21,16 @@ Database* db_create(void)
     return db;
 }
 
-void db_destroy(Database* db)
+void db_grab(Database* db)
 {
-    if (!db) return;
+    if (db)
+        aint32_add(&db->refCount, 1);
+}
+
+void db_drop(Database* db)
+{
+    if (!db || aint32_sub(&db->refCount, 1) > 1)
+        return;
     
     db_deinit(db);
     free(db);
@@ -35,6 +41,7 @@ int db_init(Database* db)
     db->sqlite          = NULL;
     db->callbackQueue   = ringbuf_create();
     db->dbPath          = NULL;
+    aint32_set(&db->refCount, 1);
     aint32_set(&db->nextQueryId, 1);
     
     return (!db->callbackQueue) ? ERR_OutOfMemory : ERR_None;
@@ -60,8 +67,7 @@ void db_deinit(Database* db)
 static int db_open_create(Database* db, const char* dbPath, const char* schemaPath)
 {
     FILE* schema;
-    char* sql;
-    int len;
+    SimpleString* sql;
     int rc;
 
     rc = sqlite3_open_v2(
@@ -73,7 +79,7 @@ static int db_open_create(Database* db, const char* dbPath, const char* schemaPa
     
     if (rc != SQLITE_OK)
     {
-        log_msg(Log_Error, "[%s] Could not create database '%s', SQLite error (%i): %s", FUNC, dbPath, rc, sqlite3_errstr(rc));
+        log_msg(Log_Error, "[%s] Could not create database '%s', SQLite error (%i): '%s'", FUNC, dbPath, rc, sqlite3_errstr(rc));
         return ERR_CouldNotCreate;
     }
     
@@ -84,29 +90,18 @@ static int db_open_create(Database* db, const char* dbPath, const char* schemaPa
     
     if (!schema)
     {
-        log_msg(Log_Error, "[%s] Could not read schema file '%s', SQLite error (%i): %s", FUNC, schemaPath, rc, sqlite3_errstr(rc));
+        log_msg(Log_Error, "[%s] Could not read schema file '%s', SQLite error (%i): '%s'", FUNC, schemaPath, rc, sqlite3_errstr(rc));
         return ERR_CouldNotOpen;
     }
 
-    //fixme: replace with String funcs later
-    fseek(schema, 0, SEEK_END);
-    len = ftell(schema);
-    fseek(schema, 0, SEEK_SET);
-    
-    sql = alloc_array_type(len + 1, char);
-    
-    if (!sql)
-    {
-        fclose(schema);
-        return -2;
-    }
-    
-    fread(sql, sizeof(char), len, schema);
+    sql = sstr_from_file_ptr(schema);
     fclose(schema);
     
-    rc = db_exec(db, sql);
+    if (!sql)
+        return ERR_CouldNotOpen;
     
-    free(sql);
+    rc = db_exec(db, sstr_data(sql));
+    sstr_destroy(sql);
     
     return rc;
 }
@@ -125,7 +120,9 @@ int db_open(Database* db, const char* dbPath, const char* schemaPath)
     
     if (rc == SQLITE_OK)
     {
-        //record dbPath, log success
+        /* Record dbPath, log success */
+        db->dbPath = sstr_create(dbPath, 0);
+        log_msg(Log_Info, "[%s] Opened database '%s'", FUNC, dbPath);
     }
     
     return rc;
@@ -138,7 +135,7 @@ int db_exec(Database* db, const char* sql)
     
     if (err)
     {
-        //fixme: log error message
+        log_msg(Log_Error, "[%s] Error running SQL '%s'; SQLite error: '%s'", FUNC, sql, err);
         sqlite3_free(err);
     }
     
@@ -154,7 +151,7 @@ PreparedStmt* db_prep(Database* db, const char* sql, int len)
     
     if (rc != SQLITE_OK)
     {
-        //fixme: log error message
+        log_msg(Log_Error, "[%s] Prepared statement creation failed, SQLite error (%i): '%s'", FUNC, rc, sqlite3_errstr(rc));
     }
     
     return stmt;
@@ -162,10 +159,28 @@ PreparedStmt* db_prep(Database* db, const char* sql, int len)
 
 int db_sched_ud(Database* db, PreparedStmt* stmt, QueryCB callback, void* userdata)
 {
-    return 0;
+    Query* query = query_create(db, stmt, callback, userdata);
+    int rc;
+    
+    if (!query) return ERR_OutOfMemory;
+    
+    rc = db_thread_sched(query, false);
+    
+    if (rc && rc != ERR_Semaphore)
+    {
+        log_msg(Log_Error, "[%s] Failed to schedule query, err code: %i", FUNC, rc);
+        query_destroy(query);
+    }
+    
+    return rc;
 }
 
 int db_sched_transact_ud(Database* db, TransactCB transCB, QueryCB queryCB, void* userdata)
 {
     return 0;
+}
+
+int db_next_query_id(Database* db)
+{
+    return aint32_add(&db->nextQueryId, 1);
 }

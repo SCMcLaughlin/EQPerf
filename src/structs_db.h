@@ -12,6 +12,7 @@
 #define STMT_CALC_LEN (-1)
 
 typedef sqlite3_stmt PreparedStmt;
+typedef sqlite3_stmt Row;
 
 typedef struct DbThread {
     Thread      thread;
@@ -24,6 +25,7 @@ typedef struct Database {
     sqlite3*        sqlite;
     RingBuf*        callbackQueue;
     SimpleString*   dbPath;
+    aint32_t        refCount;
     aint32_t        nextQueryId;
 } Database;
 
@@ -33,11 +35,7 @@ typedef void(*QueryCB)(struct Query* query);
 typedef struct Query {
     PreparedStmt*   stmt;
     Database*       db;
-    
-    union {
-        int         state;
-        int64_t     lastInsertId;
-    };
+    int             hasResults;
     
     union {
         void*       userdata;
@@ -45,8 +43,9 @@ typedef struct Query {
     };
     
     QueryCB         callback;
-    uint32_t        queryId;
+    int             queryId;
     int             affectedRows;
+    int64_t         lastInsertId;
     uint64_t        timestamp;
 } Query;
 

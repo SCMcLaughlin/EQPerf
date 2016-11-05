@@ -7,17 +7,18 @@
 #include "eqp_alloc.h"
 #include "structs_db.h"
 
-EQP_API Database* db_create(void);
-EQP_API void db_destroy(Database* db);
+Database* db_create(void);
+void db_grab(Database* db);
+void db_drop(Database* db);
 
 int db_init(Database* db);
 void db_deinit(Database* db);
 
-EQP_API int db_open(Database* db, const char* dbPath, const char* schemaPath);
+int db_open(Database* db, const char* dbPath, const char* schemaPath);
 
 int db_exec(Database* db, const char* sql);
 
-EQP_API PreparedStmt* db_prep(Database* db, const char* sql, int len);
+PreparedStmt* db_prep(Database* db, const char* sql, int len);
 #define db_prep_cstr(db, sql) db_prep((db), (sql), -1)
 #define db_prep_literal(db, sql) db_prep((db), (sql), sizeof(sql) - 1)
 
@@ -25,5 +26,7 @@ int db_sched_ud(Database* db, PreparedStmt* stmt, QueryCB callback, void* userda
 #define db_sched(db, stmt, cb) db_sched_ud((db), (stmt), (db), NULL)
 int db_sched_transact_ud(Database* db, TransactCB transCB, QueryCB queryCB, void* userdata);
 #define db_sched_transact(db, tcb, qcb) db_sched_transact_ud((db), (tcb), (qcb), NULL)
+
+int db_next_query_id(Database* db);
 
 #endif/*DB_H*/

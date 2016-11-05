@@ -3,7 +3,7 @@
 
 int stmt_int(PreparedStmt* stmt, int column, int value)
 {
-    int rc = sqlite3_bind_int(stmt, column, value);
+    int rc = sqlite3_bind_int(stmt, column + 1, value);
     
     if (rc != SQLITE_OK)
     {
@@ -16,7 +16,7 @@ int stmt_int(PreparedStmt* stmt, int column, int value)
 
 int stmt_int64(PreparedStmt* stmt, int column, int64_t value)
 {
-    int rc = sqlite3_bind_int64(stmt, column, value);
+    int rc = sqlite3_bind_int64(stmt, column + 1, value);
     
     if (rc != SQLITE_OK)
     {
@@ -29,7 +29,7 @@ int stmt_int64(PreparedStmt* stmt, int column, int64_t value)
 
 int stmt_double(PreparedStmt* stmt, int column, double value)
 {
-    int rc = sqlite3_bind_double(stmt, column, value);
+    int rc = sqlite3_bind_double(stmt, column + 1, value);
     
     if (rc != SQLITE_OK)
     {
@@ -42,7 +42,7 @@ int stmt_double(PreparedStmt* stmt, int column, double value)
 
 static int stmt_cstr_impl(PreparedStmt* stmt, int column, const char* value, int len, void (*type)(void*))
 {
-    int rc = sqlite3_bind_text(stmt, column, value, len, type);
+    int rc = sqlite3_bind_text(stmt, column + 1, value, len, type);
     
     if (rc != SQLITE_OK)
     {
@@ -65,7 +65,7 @@ int stmt_cstr_no_copy(PreparedStmt* stmt, int column, const char* value, int len
 
 static int stmt_blob_impl(PreparedStmt* stmt, int column, const void* value, uint32_t len, void (*type)(void*))
 {
-    int rc = sqlite3_bind_blob(stmt, column, value, len, type);
+    int rc = sqlite3_bind_blob(stmt, column + 1, value, len, type);
     
     if (rc != SQLITE_OK)
     {

@@ -11,6 +11,16 @@ int32_t aint32_get(aint32_t* a)
     return atomic_load(a);
 }
 
+int32_t aint32_add(aint32_t* a, int32_t amt)
+{
+    return atomic_fetch_add(a, amt);
+}
+
+int32_t aint32_sub(aint32_t* a, int32_t amt)
+{
+    return atomic_fetch_sub(a, amt);
+}
+
 int aint32_cmp_xchg_weak(aint32_t* a, int32_t expected, int32_t desired)
 {
     return atomic_compare_exchange_weak(a, &expected, desired);
