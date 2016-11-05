@@ -47,6 +47,9 @@ typedef int8_t bool;
 #define true 1
 #define false 0
 
+#define KILOBYTES(n) (1024 * (n))
+#define MEGABYTES(n) (1024 * KILOBYTES(n))
+
 #define sizefield(type, name) sizeof(((type*)0)->name)
 
 #endif/*DEFINE_H*/

@@ -84,6 +84,56 @@ static void db_thread_push(Array* array, void* data, int isTransaction)
         query_destroy((Query*)data);
 }
 
+static void db_thread_exec_transactions(Array* transactions)
+{
+    (void)transactions;
+}
+
+static void db_thread_exec_queries(Array* queries)
+{
+    uint32_t n = array_count(queries);
+    uint32_t i = 0;
+    
+    while (i < n)
+    {
+        Query* query  = *array_get(queries, i, Query*);
+        int rc;
+        
+        if (!query)
+        {
+        swap_and_pop:
+            array_swap_and_pop(queries, i);
+            n--;
+            continue;
+        }
+        
+        rc = query_exec_background(query);
+        
+        switch (rc)
+        {
+        case ERR_True: /* Execution completed */
+            rc = query_queue_callback(query);
+        
+            if (rc)
+            {
+                log_msg(Log_Error, "[%s] Failed to queue successfully completed query for callback execution, err code: %i", rc);
+                goto destroy;
+            }
+        
+            goto swap_and_pop;
+            
+        case ERR_False: /* Could not complete query due to lock contention, keep trying */
+            i++;
+            break;
+        
+        default:
+        destroy:
+            query_destroy(query);
+            goto swap_and_pop;
+        }
+    }
+}
+
 void db_thread_proc(Thread* thread, void* unused)
 {
     RingBuf* inputQueue = sDbThread->inputQueue;
@@ -101,24 +151,34 @@ void db_thread_proc(Thread* thread, void* unused)
         if (thread_wait(thread))
             break;
         
-        while (!ringbuf_pop(inputQueue, &rp))
+        for (;;)
         {
-            switch (rp.opcode)
+            while (!ringbuf_pop(inputQueue, &rp))
             {
-            case RingOp_DbQuery:
-                db_thread_push(queries, rp.data, false);
-                break;
-            
-            case RingOp_DbTransaction:
-                db_thread_push(transactions, rp.data, true);
-                break;
-            
-            default:
-                break;
+                switch (rp.opcode)
+                {
+                case RingOp_DbQuery:
+                    db_thread_push(queries, rp.data, false);
+                    break;
+                
+                case RingOp_DbTransaction:
+                    db_thread_push(transactions, rp.data, true);
+                    break;
+                
+                default:
+                    log_msg(Log_Warning, "[%s] Unexpected RingOp: %i", FUNC, rp.opcode);
+                    break;
+                }
             }
+            
+            db_thread_exec_transactions(transactions);
+            db_thread_exec_queries(queries);
+            
+            if (array_empty(queries) && array_empty(transactions))
+                break;
+            
+            clock_sleep(2);
         }
-        
-        /*fixme: execute queries here*/
         
         if (thread_should_stop(thread))
             break;

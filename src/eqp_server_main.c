@@ -8,6 +8,12 @@
 #include "container.h"
 #include "log.h"
 #include "main_thread.h"
+#include "database.h"
+
+static void test_cb(Query* query)
+{
+    printf("query %p says hi!\n", query);
+}
 
 int main()
 {
@@ -50,6 +56,22 @@ int main()
     printf("%i\n", x);
     
     tbl_deinit(&tbl, NULL);
+    
+    
+    Database db;
+    db_init(&db);
+    db_open(&db, ":memory:", NULL);
+    
+    PreparedStmt* stmt = db_prep(&db, "CREATE TABLE x(a, b, c)", STMT_CALC_LEN);
+    db_sched(&db, stmt, NULL);
+    clock_sleep(500);
+    stmt = db_prep(&db, "INSERT INTO x VALUES (1, 2, 3)", STMT_CALC_LEN);
+    db_sched(&db, stmt, test_cb);
+    clock_sleep(1000);
+    db_exec_callbacks(&db);
+    
+    db_deinit(&db);
+    
 
     printf("total time: %lu\n", perf_microseconds(&pt));
     

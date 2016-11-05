@@ -17,7 +17,7 @@ Query* query_create(Database* db, PreparedStmt* stmt, QueryCB callback, void* us
     query->queryId      = db_next_query_id(db);
     query->affectedRows = 0;
     query->lastInsertId = 0;
-    query->timestamp    = clock_microseconds();
+    perf_init(&query->perfTimer);
     
     db_grab(db);
     
@@ -49,6 +49,8 @@ int query_exec_background(Query* query)
     
     case SQLITE_ROW:
         query->hasResults = true;
+        log_msg(Log_SQL, "[%s] Executed query %i for database '%s' in %lu microseconds; results were returned; SQL: '%s'",
+            FUNC, query_id(query), query_db_path(query), perf_microseconds(&query->perfTimer), sqlite3_sql(query->stmt));
         break;
     
     case SQLITE_DONE:
@@ -56,6 +58,8 @@ int query_exec_background(Query* query)
         query->affectedRows = sqlite3_changes(sqlite);
         query->lastInsertId = sqlite3_last_insert_rowid(sqlite);
         query->hasResults   = false;
+        log_msg(Log_SQL, "[%s] Executed query %i for database '%s' in %lu microseconds; affected rows: %i, last insert rowid: %ld; SQL: '%s'",
+            FUNC, query_id(query), query_db_path(query), perf_microseconds(&query->perfTimer), query->affectedRows, query->lastInsertId, sqlite3_sql(query->stmt));
         break;
     
     default:
@@ -107,4 +111,26 @@ Row* query_select(Query* query)
 void query_reset(Query* query)
 {
     sqlite3_reset(query->stmt);
+}
+
+int query_queue_callback(Query* query)
+{
+    RingPacket rp;
+    
+    ring_packet_init_src(&rp, EQPID_DbThread, 0, RingOp_DbQuery, 0, query);
+    
+    return db_queue_callback(query->db, &rp);
+}
+
+void query_exec_callback(Query* query)
+{
+    QueryCB callback = query->callback;
+    
+    if (callback)
+        callback(query);
+}
+
+const char* query_db_path(Query* query)
+{
+    return db_path(query->db);
 }

@@ -59,7 +59,8 @@ void db_deinit(Database* db)
     
     if (db->dbPath)
     {
-        free(db->dbPath);
+        log_msg(Log_Info, "[%s] Shutting down database '%s'", FUNC, sstr_data(db->dbPath));
+        sstr_destroy(db->dbPath);
         db->dbPath = NULL;
     }
 }
@@ -171,6 +172,10 @@ int db_sched_ud(Database* db, PreparedStmt* stmt, QueryCB callback, void* userda
         log_msg(Log_Error, "[%s] Failed to schedule query, err code: %i", FUNC, rc);
         query_destroy(query);
     }
+    else
+    {
+        log_msg(Log_SQL, "[%s] Scheduled query %i for database '%s': '%s'", FUNC, query_id(query), db_path(db), sqlite3_sql(stmt));
+    }
     
     return rc;
 }
@@ -183,4 +188,45 @@ int db_sched_transact_ud(Database* db, TransactCB transCB, QueryCB queryCB, void
 int db_next_query_id(Database* db)
 {
     return aint32_add(&db->nextQueryId, 1);
+}
+
+const char* db_path(Database* db)
+{
+    SimpleString* path = db->dbPath;
+    return path ? sstr_data(path) : "<unknown>";
+}
+
+int db_queue_callback(Database* db, RingPacket* rp)
+{
+    return ringbuf_push(db->callbackQueue, rp);
+}
+
+void db_exec_callbacks(Database* db)
+{
+    RingBuf* queue = db->callbackQueue;
+    RingPacket rp;
+    
+    while (!ringbuf_pop(queue, &rp))
+    {
+        switch (rp.opcode)
+        {
+        case RingOp_DbQuery:
+        {
+            Query* query = (Query*)rp.data;
+            
+            query_exec_callback(query);
+            query_destroy(query);
+            break;
+        }
+        
+        case RingOp_DbTransaction:
+        {
+            break;
+        }
+        
+        default:
+            log_msg(Log_Warning, "[%s] Unexpected RingOp: %i", FUNC, rp.opcode);
+            break;
+        }
+    }
 }

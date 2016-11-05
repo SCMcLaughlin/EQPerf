@@ -433,7 +433,10 @@ static void log_register_impl(RingPacket* rp, HashTbl* logFiles)
 #endif
     
     if (lf.fp)
+    {
         tbl_set_int(logFiles, srcId, &lf);
+        log_as_id(srcId, Log_Init, "== Opened log file ==");
+    }
 }
 
 static void log_deregister_impl(RingPacket* rp, HashTbl* logFiles)

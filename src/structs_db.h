@@ -46,7 +46,7 @@ typedef struct Query {
     int             queryId;
     int             affectedRows;
     int64_t         lastInsertId;
-    uint64_t        timestamp;
+    PerfTimer       perfTimer;
 } Query;
 
 struct Transaction;
