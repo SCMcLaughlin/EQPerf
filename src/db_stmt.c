@@ -99,7 +99,7 @@ int stmt_exec_transaction(PreparedStmt* stmt)
     {
         rc = sqlite3_step(stmt);
     }
-    while (rc == SQLITE_BUSY);
+    while (rc == SQLITE_BUSY || rc == SQLITE_LOCKED);
     
     sqlite3_finalize(stmt);
     

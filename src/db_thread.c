@@ -100,7 +100,14 @@ static void db_thread_exec_transactions(Array* transactions)
         Query* query;
         int rc;
         
-        if (db_exec(db, "BEGIN;"))
+        stmt = db_prep_literal(db, "BEGIN IMMEDIATE");
+        
+        if (!stmt)
+            goto skip;
+        
+        rc = stmt_exec_transaction(stmt);
+        
+        if (rc)
             goto skip;
         
         transact_exec_callback(trans);
@@ -129,8 +136,8 @@ static void db_thread_exec_transactions(Array* transactions)
         
         if (rc)
         {
-            log_msg(Log_Error, "[%s] Failed to queue successfully completed transaction %i for database '%s' for callback execution, err code: %i",
-                FUNC, transact_id(trans), db_path(db), rc);
+            log_msg(Log_Error, "[%s] Failed to queue successfully completed transaction %i for database '%s' for callback execution, err code: %s",
+                FUNC, transact_id(trans), db_path(db), err_str(rc));
             goto dest_query;
         }
         
@@ -170,8 +177,8 @@ static void db_thread_exec_queries(Array* queries)
         
             if (rc)
             {
-                log_msg(Log_Error, "[%s] Failed to queue successfully completed query %i for database '%s' for callback execution, err code: %i",
-                    FUNC, query_id(query), query_db_path(query), rc);
+                log_msg(Log_Error, "[%s] Failed to queue successfully completed query %i for database '%s' for callback execution, err code: %s",
+                    FUNC, query_id(query), query_db_path(query), err_str(rc));
                 goto destroy;
             }
         

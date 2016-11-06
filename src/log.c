@@ -4,6 +4,7 @@
 static LogThread* sLog;
 
 #define NAME_LEN 256
+#define MSG_OVERHEAD 64
 
 static void log_thread_proc(Thread*, void*);
 static void log_close_all_files(void* ptr);
@@ -49,8 +50,6 @@ void log_deinit(void)
     free(sLog);
     sLog = NULL;
 }
-
-#define MSG_OVERHEAD 64
 
 static int log_msg_overhead(int type, char* str)
 {
@@ -154,8 +153,6 @@ static void log_impl(int srcId, int type, const char* fmt, va_list args, va_list
     
     thread_trigger(&sLog->thread);
 }
-
-#undef MSG_OVERHEAD
 
 void log_msg(int type, const char* fmt, ...)
 {
@@ -397,6 +394,29 @@ int log_name_by_src(int srcId, char* name, const char* dir)
     return len;
 }
 
+static void log_write_opened_msg(FILE* fp)
+{
+    time_t rawTime;
+    struct tm* curTime;
+    char timestr[MSG_OVERHEAD];
+    int len;
+    
+    rawTime = time(NULL);
+    
+    if (rawTime == -1) return;
+    
+    curTime = localtime(&rawTime);
+    
+    if (!curTime) return;
+    
+    len = strftime(timestr, MSG_OVERHEAD, "[%Y-%m-%d : %H:%M:%S] ", curTime);
+    
+    if (len <= 0) return;
+    
+    fprintf(fp, "%s|Init| == Opened log file ==\n", timestr);
+    fflush(fp);
+}
+
 static void log_register_impl(RingPacket* rp, HashTbl* logFiles)
 {
     int srcId = rp->srcId;
@@ -411,7 +431,7 @@ static void log_register_impl(RingPacket* rp, HashTbl* logFiles)
         return;
     
     /* Find out the file's size, if it already exists */
-    lf.fp   = fopen(name, "r");
+    lf.fp   = fopen(name, "rb");
     lf.size = 0;
     
     if (lf.fp)
@@ -435,7 +455,7 @@ static void log_register_impl(RingPacket* rp, HashTbl* logFiles)
     if (lf.fp)
     {
         tbl_set_int(logFiles, srcId, &lf);
-        log_as_id(srcId, Log_Init, "== Opened log file ==");
+        log_write_opened_msg(lf.fp);
     }
 }
 
@@ -527,3 +547,4 @@ void log_thread_proc(Thread* thread, void* unused)
 }
 
 #undef NAME_LEN
+#undef MSG_OVERHEAD

@@ -35,6 +35,7 @@ _EQP_SERVER_OBJECTS=    \
  eqp_thread_common      \
  eqp_thread_posix       \
  eqp_tls_posix          \
+ err_code				\
  hash                   \
  log                    \
  main_thread            \
@@ -77,7 +78,7 @@ eqp-server: bin/eqp-server
 amalg: amalg-eqp-server
 
 amalg-eqp-server:
-	$(E) "Building amalgamated source file"
+	$(E) "Generating amalgamated source file"
 	$(Q)luajit amalg/amalg.lua "amalg/amalg-eqp-server.c" $(_EQP_SERVER_OBJECTS)
 	$(E) "Building amalg/amalg-eqp-server.c"
 	$(Q)$(CC) -o bin/eqp-server amalg/amalg-eqp-server.c $(CDEF) $(CWARN) $(CWARNIGNORE) $(CFLAGS) $(CINCLUDE) $(LSTATIC) $(LDYNCORE) $(LFLAGS)

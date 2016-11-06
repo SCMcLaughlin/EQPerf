@@ -34,6 +34,7 @@
 #include "enum_err.h"
 #include "enum_id.h"
 #include "enum_log.h"
+#include "err_code.h"
 
 #ifdef EQP_WINDOWS
 # define EQP_API __declspec(dllexport)

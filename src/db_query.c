@@ -45,6 +45,7 @@ int query_exec_background(Query* query)
     switch (rc)
     {
     case SQLITE_BUSY:
+    case SQLITE_LOCKED:
         return ERR_False;
     
     case SQLITE_ROW:
@@ -105,7 +106,7 @@ Row* query_select(Query* query)
     {
         rc = sqlite3_step(stmt);
     }
-    while (rc == SQLITE_BUSY); /* Shouldn't happen now, as far as I know */
+    while (rc == SQLITE_BUSY || rc == SQLITE_LOCKED);
     
     switch (rc)
     {

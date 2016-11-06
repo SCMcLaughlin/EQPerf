@@ -150,7 +150,11 @@ PreparedStmt* db_prep(Database* db, const char* sql, int len)
     PreparedStmt* stmt = NULL;
     int rc;
     
-    rc = sqlite3_prepare_v2(db->sqlite, sql, len, &stmt, NULL);
+    do
+    {
+        rc = sqlite3_prepare_v2(db->sqlite, sql, len, &stmt, NULL);
+    }
+    while (rc == SQLITE_BUSY || rc == SQLITE_LOCKED);
     
     if (rc != SQLITE_OK)
     {
@@ -171,7 +175,7 @@ int db_sched_ud(Database* db, PreparedStmt* stmt, QueryCB callback, void* userda
     
     if (rc && rc != ERR_Semaphore)
     {
-        log_msg(Log_Error, "[%s] Failed to schedule query %i for database '%s', err code: %i", FUNC, query_id(query), db_path(db), rc);
+        log_msg(Log_Error, "[%s] Failed to schedule query %i for database '%s', err code: %s", FUNC, query_id(query), db_path(db), err_str(rc));
         query_destroy(query);
     }
     else
@@ -193,7 +197,7 @@ int db_sched_transact_ud(Database* db, TransactCB transCB, QueryCB queryCB, void
     
     if (rc && rc != ERR_Semaphore)
     {
-        log_msg(Log_Error, "[%s] Failed to schedule transaction %i for database '%s', err code: %i", FUNC, transact_id(trans), db_path(db), rc);
+        log_msg(Log_Error, "[%s] Failed to schedule transaction %i for database '%s', err code: %s", FUNC, transact_id(trans), db_path(db), err_str(rc));
         transact_destroy(trans);
     }
     else
