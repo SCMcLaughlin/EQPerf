@@ -70,6 +70,21 @@ int query_exec_background(Query* query)
     return ERR_True;
 }
 
+int query_exec_synchronus(Query* query)
+{
+    for (;;)
+    {
+        int rc = query_exec_background(query);
+        
+        if (rc != ERR_False)
+        {
+            return (rc == ERR_True) ? ERR_None : rc;
+        }
+    }
+    
+    return ERR_None; /* Unreachable */
+}
+
 Row* query_select(Query* query)
 {
     sqlite3_stmt* stmt = query->stmt;

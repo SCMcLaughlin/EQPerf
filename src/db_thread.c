@@ -1,6 +1,8 @@
 
 #include "db_thread.h"
+#include "db.h"
 #include "db_query.h"
+#include "db_transaction.h"
 
 static DbThread* sDbThread;
 
@@ -78,15 +80,63 @@ static void db_thread_push(Array* array, void* data, int isTransaction)
     
     log_msg(Log_Error, "[%s] Failed to enqueue object %p (type: %s) for execution, aborting it", FUNC, data, isTransaction ? "Transaction" : "Query");
     
-    /*if (isTransaction)
-        transaction_destroy((Transaction*)data);
-    else*/
+    if (isTransaction)
+        transact_destroy((Transaction*)data);
+    else
         query_destroy((Query*)data);
 }
 
 static void db_thread_exec_transactions(Array* transactions)
 {
-    (void)transactions;
+    Transaction** pTrans;
+    uint32_t i = 0;
+    
+    while ( (pTrans = array_get(transactions, i++, Transaction*)) )
+    {
+        Transaction* trans  = *pTrans;
+        Database* db        = transact_db(trans);
+        PreparedStmt* stmt;
+        Query* query;
+        int rc;
+        
+        if (db_exec(db, "BEGIN;"))
+            goto skip;
+        
+        transact_exec_callback(trans);
+        
+        stmt = db_prep_literal(db, "COMMIT");
+        
+        if (!stmt)
+            goto skip;
+        
+        query = query_create(db, stmt, trans->queryCallback, transact_userdata(trans));
+        
+        if (!query)
+            goto skip;
+        
+        if (query_exec_synchronus(query))
+        {
+        dest_query:
+            query_destroy(query);
+            goto skip;
+        }
+        
+        rc = query_queue_callback(query);
+        
+        if (rc)
+        {
+            log_msg(Log_Error, "[%s] Failed to queue successfully completed transaction %i for database '%s' for callback execution, err code: %i",
+                FUNC, transact_id(trans), db_path(db), rc);
+            goto dest_query;
+        }
+        
+        log_msg(Log_SQL, "[%s] Executed transaction %i for database '%s' in %lu microseconds", FUNC, transact_id(trans), db_path(db), perf_microseconds(&trans->perfTimer));
+        
+    skip:
+        transact_destroy(trans);
+    }
+    
+    array_clear(transactions);
 }
 
 static void db_thread_exec_queries(Array* queries)
@@ -96,7 +146,7 @@ static void db_thread_exec_queries(Array* queries)
     
     while (i < n)
     {
-        Query* query  = *array_get(queries, i, Query*);
+        Query* query = *array_get(queries, i, Query*);
         int rc;
         
         if (!query)
@@ -116,7 +166,8 @@ static void db_thread_exec_queries(Array* queries)
         
             if (rc)
             {
-                log_msg(Log_Error, "[%s] Failed to queue successfully completed query for callback execution, err code: %i", rc);
+                log_msg(Log_Error, "[%s] Failed to queue successfully completed query %i for database '%s' for callback execution, err code: %i",
+                    FUNC, query_id(query), query_db_path(query), rc);
                 goto destroy;
             }
         

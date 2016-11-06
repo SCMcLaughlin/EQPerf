@@ -28,6 +28,7 @@ int db_sched_transact_ud(Database* db, TransactCB transCB, QueryCB queryCB, void
 #define db_sched_transact(db, tcb, qcb) db_sched_transact_ud((db), (tcb), (qcb), NULL)
 
 int db_next_query_id(Database* db);
+int db_next_transact_id(Database* db);
 const char* db_path(Database* db);
 
 int db_queue_callback(Database* db, RingPacket* rp);

@@ -6,5 +6,7 @@
 #include "db.h"
 #include "db_query.h"
 #include "db_row.h"
+#include "db_stmt.h"
+#include "db_transaction.h"
 
 #endif/*DATABASE_H*/

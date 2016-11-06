@@ -24,6 +24,7 @@ _EQP_SERVER_OBJECTS=    \
  db_row                 \
  db_stmt                \
  db_thread              \
+ db_transaction         \
  eqp_array              \
  eqp_atomic_posix       \
  eqp_clock_posix        \

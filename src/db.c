@@ -2,6 +2,7 @@
 #include "db.h"
 #include "db_thread.h"
 #include "db_query.h"
+#include "db_transaction.h"
 
 Database* db_create(void)
 {
@@ -43,6 +44,7 @@ int db_init(Database* db)
     db->dbPath          = NULL;
     aint32_set(&db->refCount, 1);
     aint32_set(&db->nextQueryId, 1);
+    aint32_set(&db->nextTransactId, 1);
     
     return (!db->callbackQueue) ? ERR_OutOfMemory : ERR_None;
 }
@@ -140,7 +142,7 @@ int db_exec(Database* db, const char* sql)
         sqlite3_free(err);
     }
     
-    return (rc == SQLITE_OK) ? 0 : -1;
+    return (rc == SQLITE_OK) ? ERR_None : ERR_Invalid;
 }
 
 PreparedStmt* db_prep(Database* db, const char* sql, int len)
@@ -169,7 +171,7 @@ int db_sched_ud(Database* db, PreparedStmt* stmt, QueryCB callback, void* userda
     
     if (rc && rc != ERR_Semaphore)
     {
-        log_msg(Log_Error, "[%s] Failed to schedule query, err code: %i", FUNC, rc);
+        log_msg(Log_Error, "[%s] Failed to schedule query %i for database '%s', err code: %i", FUNC, query_id(query), db_path(db), rc);
         query_destroy(query);
     }
     else
@@ -182,12 +184,34 @@ int db_sched_ud(Database* db, PreparedStmt* stmt, QueryCB callback, void* userda
 
 int db_sched_transact_ud(Database* db, TransactCB transCB, QueryCB queryCB, void* userdata)
 {
-    return 0;
+    Transaction* trans = transact_create(db, transCB, queryCB, userdata);
+    int rc;
+    
+    if (!trans) return ERR_OutOfMemory;
+    
+    rc = db_thread_sched(trans, true);
+    
+    if (rc && rc != ERR_Semaphore)
+    {
+        log_msg(Log_Error, "[%s] Failed to schedule transaction %i for database '%s', err code: %i", FUNC, transact_id(trans), db_path(db), rc);
+        transact_destroy(trans);
+    }
+    else
+    {
+        log_msg(Log_SQL, "[%s] Scheduled transaction %i for database '%s'", FUNC, transact_id(trans), db_path(db));
+    }
+    
+    return rc;
 }
 
 int db_next_query_id(Database* db)
 {
     return aint32_add(&db->nextQueryId, 1);
+}
+
+int db_next_transact_id(Database* db)
+{
+    return aint32_add(&db->nextTransactId, 1);
 }
 
 const char* db_path(Database* db)
@@ -205,24 +229,18 @@ void db_exec_callbacks(Database* db)
 {
     RingBuf* queue = db->callbackQueue;
     RingPacket rp;
+    Query* query;
     
     while (!ringbuf_pop(queue, &rp))
     {
         switch (rp.opcode)
         {
         case RingOp_DbQuery:
-        {
-            Query* query = (Query*)rp.data;
+            query = (Query*)rp.data;
             
             query_exec_callback(query);
             query_destroy(query);
             break;
-        }
-        
-        case RingOp_DbTransaction:
-        {
-            break;
-        }
         
         default:
             log_msg(Log_Warning, "[%s] Unexpected RingOp: %i", FUNC, rp.opcode);

@@ -27,6 +27,7 @@ typedef struct Database {
     SimpleString*   dbPath;
     aint32_t        refCount;
     aint32_t        nextQueryId;
+    aint32_t        nextTransactId;
 } Database;
 
 struct Query;
@@ -56,8 +57,9 @@ typedef struct Transaction {
     Database*   db;
     void*       userdata;
     TransactCB  transactCallback;
-    int         luaCallback;
     QueryCB     queryCallback;
+    int         transactId;
+    PerfTimer   perfTimer;
 } Transaction;
 
 #endif/*STRUCTS_DB_H*/

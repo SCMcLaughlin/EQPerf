@@ -40,7 +40,7 @@ int stmt_double(PreparedStmt* stmt, int column, double value)
     return ERR_None;
 }
 
-static int stmt_cstr_impl(PreparedStmt* stmt, int column, const char* value, int len, void (*type)(void*))
+static int stmt_str_impl(PreparedStmt* stmt, int column, const char* value, int len, void (*type)(void*))
 {
     int rc = sqlite3_bind_text(stmt, column + 1, value, len, type);
     
@@ -53,14 +53,14 @@ static int stmt_cstr_impl(PreparedStmt* stmt, int column, const char* value, int
     return ERR_None;
 }
 
-int stmt_cstr(PreparedStmt* stmt, int column, const char* value, int len)
+int stmt_str(PreparedStmt* stmt, int column, const char* value, int len)
 {
-    return stmt_cstr_impl(stmt, column, value, len, SQLITE_TRANSIENT);
+    return stmt_str_impl(stmt, column, value, len, SQLITE_TRANSIENT);
 }
 
-int stmt_cstr_no_copy(PreparedStmt* stmt, int column, const char* value, int len)
+int stmt_str_no_copy(PreparedStmt* stmt, int column, const char* value, int len)
 {
-    return stmt_cstr_impl(stmt, column, value, len, SQLITE_STATIC);
+    return stmt_str_impl(stmt, column, value, len, SQLITE_STATIC);
 }
 
 static int stmt_blob_impl(PreparedStmt* stmt, int column, const void* value, uint32_t len, void (*type)(void*))
@@ -84,4 +84,19 @@ int stmt_blob(PreparedStmt* stmt, int column, const void* value, uint32_t len)
 int stmt_blob_no_copy(PreparedStmt* stmt, int column, const void* value, uint32_t len)
 {
     return stmt_blob_impl(stmt, column, value, len, SQLITE_STATIC);
+}
+
+int stmt_exec_transaction(PreparedStmt* stmt)
+{
+    int rc;
+    
+    do
+    {
+        rc = sqlite3_step(stmt);
+    }
+    while (rc == SQLITE_BUSY);
+    
+    sqlite3_finalize(stmt);
+    
+    return (rc != SQLITE_DONE && rc != SQLITE_ROW) ? ERR_Invalid : ERR_None;
 }

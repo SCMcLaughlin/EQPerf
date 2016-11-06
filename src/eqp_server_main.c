@@ -12,7 +12,28 @@
 
 static void test_cb(Query* query)
 {
-    printf("query %p says hi!\n", query);
+    uint32_t i = 0;
+    Row* row;
+    
+    while ( (row = query_select(query)) )
+    {
+        printf("row %i: %i %i %i\n", i++, row_int(row, 0), row_int(row, 1), row_int(row, 2));
+    }
+}
+
+static void test_trans(Transaction* trans)
+{
+    Database* db = transact_db(trans);
+    PreparedStmt* stmt;
+    
+    stmt = db_prep_literal(db, "INSERT INTO x (b) VALUES (99), (66), (33), (11), (19548)");
+    if (stmt)
+        stmt_exec_transaction(stmt);
+}
+
+static void test_commit(Query* query)
+{
+    printf("COMMIT: %i, %ld\n", query_affected_rows(query), query_last_insert_id(query));
 }
 
 int main()
@@ -58,19 +79,26 @@ int main()
     tbl_deinit(&tbl, NULL);
     
     
-    Database db;
-    db_init(&db);
-    db_open(&db, ":memory:", NULL);
+    Database* db = db_create();
+    db_open(db, ":memory:", NULL);
     
-    PreparedStmt* stmt = db_prep(&db, "CREATE TABLE x(a, b, c)", STMT_CALC_LEN);
-    db_sched(&db, stmt, NULL);
+    PreparedStmt* stmt = db_prep(db, "CREATE TABLE x(a, b, c)", STMT_CALC_LEN);
+    db_sched(db, stmt, NULL);
     clock_sleep(500);
-    stmt = db_prep(&db, "INSERT INTO x VALUES (1, 2, 3)", STMT_CALC_LEN);
-    db_sched(&db, stmt, test_cb);
-    clock_sleep(1000);
-    db_exec_callbacks(&db);
+    stmt = db_prep(db, "INSERT INTO x VALUES (1, 2, 3), (99, 0, 97), (47, NULL, 7)", STMT_CALC_LEN);
+    db_sched(db, stmt, NULL);
+    clock_sleep(750);
+    db_exec_callbacks(db);
     
-    db_deinit(&db);
+    db_sched_transact(db, test_trans, test_commit);
+    
+    stmt = db_prep_literal(db, "SELECT a, b, c FROM x");
+    db_sched(db, stmt, test_cb);
+    
+    clock_sleep(1000);
+    db_exec_callbacks(db);
+    
+    db_drop(db);
     
 
     printf("total time: %lu\n", perf_microseconds(&pt));
