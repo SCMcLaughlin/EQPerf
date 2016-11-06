@@ -86,6 +86,11 @@ int stmt_blob_no_copy(PreparedStmt* stmt, int column, const void* value, uint32_
     return stmt_blob_impl(stmt, column, value, len, SQLITE_STATIC);
 }
 
+void stmt_abort(PreparedStmt* stmt)
+{
+    sqlite3_finalize(stmt);
+}
+
 int stmt_exec_transaction(PreparedStmt* stmt)
 {
     int rc;

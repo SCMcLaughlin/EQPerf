@@ -1,6 +1,7 @@
 
 #include "db_thread.h"
 #include "db.h"
+#include "db_stmt.h"
 #include "db_query.h"
 #include "db_transaction.h"
 
@@ -112,7 +113,10 @@ static void db_thread_exec_transactions(Array* transactions)
         query = query_create(db, stmt, trans->queryCallback, transact_userdata(trans));
         
         if (!query)
+        {
+            stmt_abort(stmt);
             goto skip;
+        }
         
         if (query_exec_synchronus(query))
         {

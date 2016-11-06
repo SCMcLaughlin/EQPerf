@@ -14,6 +14,7 @@ int stmt_str_no_copy(PreparedStmt* stmt, int column, const char* value, int len)
 int stmt_blob(PreparedStmt* stmt, int column, const void* value, uint32_t len);
 int stmt_blob_no_copy(PreparedStmt* stmt, int column, const void* value, uint32_t len);
 
+void stmt_abort(PreparedStmt* stmt);
 int stmt_exec_transaction(PreparedStmt* stmt);
 
 #endif/*DB_STMT_H*/
