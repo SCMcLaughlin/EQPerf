@@ -1,6 +1,4 @@
 
-CC= clang
-
 CFLAGS= 
 COPT= -O2 -fomit-frame-pointer -ffast-math -std=gnu11
 CWARN= -Wall -Wextra -Wredundant-decls
@@ -35,7 +33,7 @@ _EQP_SERVER_OBJECTS=    \
  eqp_thread_common      \
  eqp_thread_posix       \
  eqp_tls_posix          \
- err_code				\
+ err_code               \
  hash                   \
  log                    \
  main_thread            \

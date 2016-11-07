@@ -46,6 +46,6 @@ int tls_get_int(int key, int* out)
     if (!ptr)
         return ERR_Invalid;
     
-    *out = (int)ptr;
+    *out = (int)(intptr_t)ptr;
     return ERR_None;
 }

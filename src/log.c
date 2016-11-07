@@ -240,6 +240,7 @@ void log_close_all_compress_threads(void* ptr)
     }
 }
 
+#ifdef EQP_LINUX
 static void log_compress_proc(Thread* thread, void* ptr)
 {
     char cmd[1024];
@@ -341,6 +342,7 @@ close_open:
     lf->fp      = fopen(oldName, "w+");
     lf->size    = 0;
 }
+#endif
 
 static void log_write_msg(RingPacket* rp, HashTbl* logFiles)
 {

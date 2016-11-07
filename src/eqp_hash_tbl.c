@@ -9,7 +9,7 @@
 #define ent_is_int_key(ent) (((ent)->next & ((uint32_t)(1 << 31))) >> 31)
 #define ent_set_int_key(ent) ((ent)->next |= ((uint32_t)(1 << 31)))
 #define ent_set_str_key(ent) ((ent)->next &= (((uint32_t)(1 << 31)) - 1))
-#define ent_set_next(ent, nx) ((ent)->next = ((nx) | (ent)->next & ((uint32_t)(1 << 31))))
+#define ent_set_next(ent, nx) ((ent)->next = ((nx) | ((ent)->next & ((uint32_t)(1 << 31)))))
 #define ent_get_next(ent) ((ent)->next & (((uint32_t)(1 << 31)) - 1))
 #define ent_has_next(ent) (ent_get_next(ent) != NEXT_INVALID)
 
@@ -369,7 +369,7 @@ static void* tbl_get_impl(HashTbl* tbl, int64_t key, uint32_t len, int isIntKey,
     
     for (;;)
     {
-        if (ent->hash == hash && ent_is_int_key(ent) == isIntKey)
+        if (ent->hash == hash && ent_is_int_key(ent) == (uint32_t)isIntKey)
         {
             if (isIntKey)
             {
@@ -438,7 +438,7 @@ static int tbl_remove_impl(HashTbl* tbl, int64_t key, uint32_t len, int isIntKey
     
     for (;;)
     {
-        if (ent->hash == hash && ent_is_int_key(ent) == isIntKey)
+        if (ent->hash == hash && ent_is_int_key(ent) == (uint32_t)isIntKey)
         {
             if (isIntKey)
             {
