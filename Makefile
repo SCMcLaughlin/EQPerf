@@ -79,7 +79,7 @@ amalg-eqp-server:
 	$(E) "Generating amalgamated source file"
 	$(Q)luajit amalg/amalg.lua "amalg/amalg-eqp-server.c" $(_EQP_SERVER_OBJECTS)
 	$(E) "Building amalg/amalg-eqp-server.c"
-	$(Q)$(CC) -o bin/eqp-server amalg/amalg-eqp-server.c $(CDEF) $(CWARN) $(CWARNIGNORE) $(CFLAGS) $(CINCLUDE) $(LSTATIC) $(LDYNCORE) $(LFLAGS)
+	$(Q)$(CC) -o bin/eqp-server amalg/amalg-eqp-server.c $(CDEF) $(COPT) $(CWARN) $(CWARNIGNORE) $(CFLAGS) $(CINCLUDE) $(LSTATIC) $(LDYNCORE) $(LFLAGS)
 
 bin/eqp-server: $(EQP_SERVER_OBJECTS)
 	$(E) "Linking $@"
@@ -87,7 +87,7 @@ bin/eqp-server: $(EQP_SERVER_OBJECTS)
 
 build/%.o: src/%.c $($(CC) -M src/%.c)
 	$(E) "\033[0;32mCC     $@\033[0m"
-	$(Q)$(CC) -c -o $@ $< $(CDEF) $(CWARN) $(CWARNIGNORE) $(CFLAGS) $(CINCLUDE)
+	$(Q)$(CC) -c -o $@ $< $(CDEF) $(COPT) $(CWARN) $(CWARNIGNORE) $(CFLAGS) $(CINCLUDE)
 
 clean:
 	$(Q)$(RM) build/*.o
