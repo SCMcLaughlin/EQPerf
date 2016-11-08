@@ -212,24 +212,24 @@ int str_append_file_ptr(String* str, FILE* fp)
     
     if (fread(str->data + curlen, sizeof(char), (size_t)len, fp) != (size_t)len)
     {
-        str->data[curlen] = 0; /* Ensure we still have our original null terminator */
-        return ERR_FileOperation;
+        rc = ERR_FileOperation;
+    }
+    else
+    {
+        curlen += len;
+        str->length = curlen;
+        rc          = ERR_None;
     }
     
-    curlen += len;
-    str->length = curlen;
-    str->data[curlen] = 0; /* New null terminator */
+    str->data[curlen] = 0; /* New null terminator, or ensure we still have our original null terminator on failure */
     
-    return ERR_None;
+    return rc;
 }
 
 int str_reserve(String* str, uint32_t count)
 {
-    if (str->capacity <= count)
-    {
-        if (!str_realloc(str, count))
-            return ERR_OutOfMemory;
-    }
+    if (str->capacity <= count && !str_realloc(str, count))
+        return ERR_OutOfMemory;
     
     return ERR_None;
 }
