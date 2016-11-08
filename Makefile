@@ -17,6 +17,7 @@ CDEF+= -DEQP_DEBUG -DDEBUG
 # eqp-server
 ##############################################################################
 _EQP_SERVER_OBJECTS=    \
+ bit                    \
  db                     \
  db_query               \
  db_row                 \

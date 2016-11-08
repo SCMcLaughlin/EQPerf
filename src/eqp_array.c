@@ -161,7 +161,7 @@ int array_reserve(Array* ar, uint32_t count)
 {
     if (ar->capacity < count)
     {
-        byte* data = alloc_bytes(ar->elemSize * count);
+        byte* data = realloc_bytes(ar->data, ar->elemSize * count);
         
         if (!data) return ERR_OutOfMemory;
         

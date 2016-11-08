@@ -17,6 +17,7 @@ const char* err_str(int rc)
     case ERR_NotInitialized: return "ERR_NotInitialized";
     case ERR_CouldNotCreate: return "ERR_CouldNotCreate";
     case ERR_Semaphore: return "ERR_Semaphore";
+    case ERR_FileOperation: return "ERR_FileOperation";
     default: return "ERR_Unknown";
     }
 }
