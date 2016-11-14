@@ -15,5 +15,6 @@
 #define ERR_NotInitialized  -8
 #define ERR_CouldNotCreate  -9
 #define ERR_Semaphore       -10
+#define ERR_FileOperation   -11
 
 #endif/*ENUM_ERR_H*/

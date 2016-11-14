@@ -55,26 +55,12 @@ int array_set(Array* ar, uint32_t index, const void* value)
     return ERR_None;
 }
 
-static int array_alloc_default(Array* ar)
+static int array_realloc(Array* ar, uint32_t cap)
 {
-    byte* data = alloc_bytes(ar->elemSize * MIN_CAPACITY);
-    
-    if (!data) return false;
-    
-    ar->capacity    = MIN_CAPACITY;
-    ar->data        = data;
-    
-    return true;
-}
-
-static int array_realloc(Array* ar)
-{
-    uint32_t cap    = ar->capacity;
-    uint32_t size   = ar->elemSize;
     byte* data;
     
-    cap *= 2;
-    data = realloc_bytes(ar->data, cap * size);
+    cap     = (cap == 0) ? MIN_CAPACITY : (cap * 2);
+    data    = realloc_bytes(ar->data, cap * ar->elemSize);
     
     if (!data) return false;
     
@@ -91,16 +77,8 @@ void* array_push_back(Array* ar, const void* value)
     uint32_t size   = ar->elemSize;
     void* ptr;
     
-    if (cap == 0)
-    {
-        if (!array_alloc_default(ar))
-            return NULL;
-    }
-    else if (index >= cap)
-    {
-        if (!array_realloc(ar))
-            return NULL;
-    }
+    if (index >= cap && !array_realloc(ar, cap))
+        return NULL;
     
     ar->count   = index + 1;
     ptr         = &ar->data[index * size];
@@ -161,7 +139,7 @@ int array_reserve(Array* ar, uint32_t count)
 {
     if (ar->capacity < count)
     {
-        byte* data = alloc_bytes(ar->elemSize * count);
+        byte* data = realloc_bytes(ar->data, ar->elemSize * count);
         
         if (!data) return ERR_OutOfMemory;
         

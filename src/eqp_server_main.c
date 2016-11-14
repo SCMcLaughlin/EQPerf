@@ -100,6 +100,17 @@ int main()
     
     db_drop(db);
     
+    
+    
+    String str;
+    str_init(&str);
+    
+    str_append(&str, "hi-ho neighbour!\n", 0);
+    str_set_from_file(&str, "../amalg/amalg.lua");
+    printf("file data with len %u:\n%s\n", str_length(&str), str_data(&str));
+    
+    str_deinit(&str);
+    
 
     printf("total time: %lu\n", perf_microseconds(&pt));
     
