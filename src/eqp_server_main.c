@@ -69,9 +69,9 @@ int main()
     int x = 99;
     tbl_set_int(&tbl, 7, &x);
     x = 66;
-    tbl_set_cstr(&tbl, "hi there", 0, &x);
+    tbl_set_str(&tbl, "hi there", 0, &x);
     
-    x = *tbl_get_cstr(&tbl, "hi there", 0, int);
+    x = *tbl_get_str(&tbl, "hi there", 0, int);
     printf("hash tbl: %i, ", x);
     x = *tbl_get_int(&tbl, 7, int);
     printf("%i\n", x);

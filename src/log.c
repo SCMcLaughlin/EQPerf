@@ -248,7 +248,7 @@ static void log_compress_proc(Thread* thread, void* ptr)
     
     (void)thread;
     
-    if (snprintf(cmd, sizeof(cmd), "gzip %s", name) > 0)
+    if (snprintf(cmd, sizeof(cmd), "xz %s", name) > 0)
     {
         system(cmd);
     }

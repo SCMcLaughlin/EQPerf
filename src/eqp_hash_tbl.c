@@ -325,7 +325,7 @@ static int tbl_set_impl(HashTbl* tbl, int64_t key, uint32_t len, int isIntKey, c
     return tbl_set_impl(tbl, key, len, isIntKey, value, hash);
 }
 
-int tbl_set_cstr(HashTbl* tbl, const char* key, uint32_t len, const void* value)
+int tbl_set_str(HashTbl* tbl, const char* key, uint32_t len, const void* value)
 {
     uint32_t hash;
     
@@ -334,7 +334,7 @@ int tbl_set_cstr(HashTbl* tbl, const char* key, uint32_t len, const void* value)
     if (len == 0)
         len = strlen(key);
 
-    hash = hash_cstr(key, len);
+    hash = hash_str(key, len);
     
     return tbl_set_impl(tbl, (int64_t)key, len, false, value, hash);
 }
@@ -392,7 +392,7 @@ static void* tbl_get_impl(HashTbl* tbl, int64_t key, uint32_t len, int isIntKey,
     return NULL;
 }
 
-void* tbl_get_cstr_raw(HashTbl* tbl, const char* key, uint32_t len)
+void* tbl_get_str_raw(HashTbl* tbl, const char* key, uint32_t len)
 {
     uint32_t hash;
     
@@ -401,7 +401,7 @@ void* tbl_get_cstr_raw(HashTbl* tbl, const char* key, uint32_t len)
     if (len == 0)
         len = strlen(key);
 
-    hash = hash_cstr(key, len);
+    hash = hash_str(key, len);
     
     return tbl_get_impl(tbl, (int64_t)key, len, false, hash);
 }
@@ -503,7 +503,7 @@ static int tbl_remove_impl(HashTbl* tbl, int64_t key, uint32_t len, int isIntKey
     return false;
 }
 
-int tbl_remove_cstr(HashTbl* tbl, const char* key, uint32_t len)
+int tbl_remove_str(HashTbl* tbl, const char* key, uint32_t len)
 {
     uint32_t hash;
     
@@ -512,7 +512,7 @@ int tbl_remove_cstr(HashTbl* tbl, const char* key, uint32_t len)
     if (len == 0)
         len = strlen(key);
 
-    hash = hash_cstr(key, len);
+    hash = hash_str(key, len);
     
     return tbl_remove_impl(tbl, (int64_t)key, len, false, hash);
 }

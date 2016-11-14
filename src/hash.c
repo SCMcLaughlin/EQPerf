@@ -18,7 +18,7 @@ uint32_t hash_int64(int64_t key)
     return hash_int64_impl(key & 0x00000000ffffffLL, key & 0xffffffff00000000LL);
 }
 
-uint32_t hash_cstr(const char* key, uint32_t len)
+uint32_t hash_str(const char* key, uint32_t len)
 {
     uint32_t h      = len;
     uint32_t step   = (len >> 5) + 1;
