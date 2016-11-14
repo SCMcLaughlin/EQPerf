@@ -196,7 +196,7 @@ static void db_thread_exec_queries(Array* queries)
     }
 }
 
-void db_thread_proc(Thread* thread, void* unused)
+static void db_thread_proc(Thread* thread, void* unused)
 {
     RingBuf* inputQueue = sDbThread->inputQueue;
     Array* queries      = &sDbThread->activeQueries;

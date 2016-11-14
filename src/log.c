@@ -213,7 +213,7 @@ int log_deregister(int srcId)
     return log_reg_impl(srcId, RingOp_LogDeregister);
 }
 
-void log_close_all_files(void* ptr)
+static void log_close_all_files(void* ptr)
 {
     LogFile* lf = (LogFile*)ptr;
     
@@ -224,7 +224,7 @@ void log_close_all_files(void* ptr)
     }
 }
 
-void log_close_all_compress_threads(void* ptr)
+static void log_close_all_compress_threads(void* ptr)
 {
     Thread** pp = (Thread**)ptr;
     
@@ -307,7 +307,7 @@ static void log_compress(LogFile* lf, int srcId)
     
     /*
         Beyond this point, we assume the log was successfully moved,
-        and the open currently file (if any) can no longer be written to.
+        and the currently open file (if any) can no longer be written to.
     
         If the thread or compression fails, that's okay -- we at least
         have the full log moved to log/archive/ and have the timestamp
@@ -374,7 +374,7 @@ free_str:
     free(str);
 }
 
-int log_name_by_src(int srcId, char* name, const char* dir)
+static int log_name_by_src(int srcId, char* name, const char* dir)
 {
     int len;
     
@@ -504,7 +504,7 @@ static void log_check_threads(void)
     }
 }
 
-void log_thread_proc(Thread* thread, void* unused)
+static void log_thread_proc(Thread* thread, void* unused)
 {
     RingBuf* ringBuf    = sLog->ringBuf;
     HashTbl* logFiles   = &sLog->logFiles;
